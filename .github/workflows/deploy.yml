@@ -1,0 +1,102 @@
+name: Deploy
+
+# Deploys the Worker and the static assets to Cloudflare.
+#
+# The heavy lifting lives in the same two scripts Cloudflare Workers Builds uses
+# (scripts/cf-build.sh + scripts/cf-deploy.sh), so both CI paths behave
+# identically: npm ci, rebuild the PBKDF2 module, download the Web Vault, fill in
+# the D1 id, typecheck, D1 migrations, then `wrangler deploy`.
+#
+# Required repository secrets (Settings > Secrets and variables > Actions):
+#   CLOUDFLARE_API_TOKEN   Workers Scripts:Edit, D1:Edit, KV:Edit (and R2:Edit if used)
+#   CLOUDFLARE_ACCOUNT_ID
+#   D1_DATABASE_ID         production D1 database id
+#
+# Optional repository variables:
+#   BW_WEB_VERSION         bw_web_builds tag (default v2026.10.1); "latest" tracks upstream
+#   KV_ID                  ATTACHMENTS_KV namespace id; enables the KV binding
+#   R2_NAME                enables the ATTACHMENTS_BUCKET binding
+#   SEED_GLOBAL_DOMAINS    "false" to skip seeding global equivalent domains
+#   GLOBAL_DOMAINS_URL     pin a specific global_domains.json source
+#   SKIP_D1                "1" to skip all D1 bootstrap/migrate/seed steps
+#   D1_NAME                D1 *binding* name used by the migration steps (default vault1)
+#   WORKER_URL             enables the post-deploy smoke step
+#
+# Runtime secrets (JWT_SECRET, JWT_REFRESH_SECRET, ALLOWED_EMAILS) are Worker
+# secrets, not build inputs: set them once with `wrangler secret put` and they
+# survive every deploy. This workflow never touches them.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_d1:
+        description: 'Skip D1 bootstrap/migrations for this run'
+        type: boolean
+        default: false
+
+# Never let two deploys race: a second push cancels the queued one instead of
+# uploading assets against a half-migrated database.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Guard the deploy with the test suite: this workflow can run before the
+      # separate CI run on the same commit finishes.
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: bash scripts/cf-build.sh
+        env:
+          SKIP_INSTALL: '1'
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+          BW_WEB_VERSION: ${{ vars.BW_WEB_VERSION || 'v2026.10.1' }}
+          KV_ID: ${{ vars.KV_ID }}
+          R2_NAME: ${{ vars.R2_NAME }}
+
+      - name: Deploy
+        run: bash scripts/cf-deploy.sh
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          D1_NAME: ${{ vars.D1_NAME || 'vault1' }}
+          SEED_GLOBAL_DOMAINS: ${{ vars.SEED_GLOBAL_DOMAINS || 'true' }}
+          GLOBAL_DOMAINS_URL: ${{ vars.GLOBAL_DOMAINS_URL }}
+          SKIP_D1: ${{ github.event.inputs.skip_d1 == 'true' && '1' || vars.SKIP_D1 }}
+
+      # Proves the Worker and the asset layer both answer. Set the WORKER_URL
+      # repository variable (e.g. https://vault.example.com) to enable it; the
+      # step is skipped when the variable is empty.
+      - name: Smoke test the deployment
+        if: vars.WORKER_URL != ''
+        run: |
+          set -euo pipefail
+          BASE="${{ vars.WORKER_URL }}"
+          echo "Probing $BASE"
+          curl -fsS --max-time 20 "$BASE/api/config" | head -c 200
+          echo
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$BASE/")"
+          echo "GET / -> $code"
+          test "$code" = "200"

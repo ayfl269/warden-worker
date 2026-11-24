@@ -39,6 +39,10 @@ if ! command -v wrangler >/dev/null 2>&1; then
   exit 1
 fi
 
+# `wrangler d1 migrations apply` only resolves a binding or `database_name`
+# declared in wrangler.toml -- a bare database name from the account fails with
+# "Couldn't find a D1 DB with the name or binding". So this must stay the
+# *binding* name, which is also what `wrangler d1 execute` accepts.
 D1_NAME="${D1_NAME:-vault1}"
 SEED_GLOBAL_DOMAINS="${SEED_GLOBAL_DOMAINS:-true}"
 SKIP_D1="${SKIP_D1:-0}"

@@ -22,7 +22,9 @@
 # Build variables (Settings > Build > "Variables and Secrets"):
 #   D1_DATABASE_ID        (required)  production D1 database id (substituted into wrangler.toml)
 #   BW_WEB_VERSION        (optional)  bw_web_builds tag (default below); "latest" to track upstream
+#   KV_ID                 (optional)  ATTACHMENTS_KV namespace id; enables the KV binding
 #   R2_NAME               (optional)  R2 bucket name; enables the ATTACHMENTS_BUCKET binding
+#   SKIP_INSTALL          (optional)  "1" to skip `npm ci` (the caller already installed)
 #
 set -euo pipefail
 
@@ -34,8 +36,13 @@ BW_WEB_VERSION="${BW_WEB_VERSION:-v2026.6.4}"
 step() { printf '\n\033[1m=== %s ===\033[0m\n' "$1"; }
 
 # ---------------------------------------------------------------------------
-step "Node dependencies (npm ci)"
-npm ci
+if [ "${SKIP_INSTALL:-0}" = "1" ]; then
+  # GitHub Actions installs first (it needs dependencies for the test step).
+  step "Node dependencies -- SKIPPED (SKIP_INSTALL=1)"
+else
+  step "Node dependencies (npm ci)"
+  npm ci
+fi
 
 # ---------------------------------------------------------------------------
 step "PBKDF2 WebAssembly module (asc)"
@@ -73,6 +80,18 @@ if [ -n "${R2_NAME:-}" ]; then
     echo 'binding = "ATTACHMENTS_BUCKET"'
     echo "bucket_name = \"${R2_NAME}\""
   } >> wrangler.toml
+fi
+
+# Attachments are optional. Without an id the KV binding is skipped by wrangler
+# and every attachment endpoint answers "Attachments are not enabled", so allow
+# the id to come from a build variable instead of a hand edit.
+if [ -n "${KV_ID:-}" ]; then
+  if grep -q '# id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"' wrangler.toml; then
+    echo "Enabling KV namespace binding -> ${KV_ID}"
+    sed -i "s|# id = \"REPLACE_WITH_YOUR_KV_NAMESPACE_ID\"|id = \"${KV_ID}\"|" wrangler.toml
+  else
+    echo "wrangler.toml already carries a KV namespace id; leaving it untouched"
+  fi
 fi
 
 # ---------------------------------------------------------------------------

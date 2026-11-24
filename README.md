@@ -218,9 +218,16 @@ the static assets. See [docs/deployment.md](docs/deployment.md) for the full gui
 the Cloudflare Workers Builds pipeline (`scripts/cf-build.sh` + `scripts/cf-deploy.sh`) and
 the D1/KV/R2 setup.
 
-CI (`.github/workflows/ci.yml`) typechecks, lints, runs the test suite, rebuilds the WASM
-module, downloads the frontend and verifies the bundle with `wrangler deploy --dry-run`. It
-does **not** deploy; `backup-d1.yaml` handles scheduled D1 exports.
+Two workflows ship with the repository:
+
+* `.github/workflows/ci.yml` — typechecks, lints, runs the test suite, rebuilds the WASM
+  module, downloads the frontend and verifies the bundle with `wrangler deploy --dry-run`.
+  It does not deploy.
+* `.github/workflows/deploy.yml` — deploys on every push to `main` (or on demand) by running
+  the same two scripts as Workers Builds: `npm ci`, tests, build, D1 migrations, deploy, and
+  an optional post-deploy probe when the `WORKER_URL` variable is set.
+
+`backup-d1.yaml` handles scheduled D1 exports.
 
 ## Verification status
 

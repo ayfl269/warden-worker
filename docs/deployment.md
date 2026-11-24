@@ -225,6 +225,49 @@ it does not deploy:
 5. `npm run frontend` — downloads the Web Vault
 6. `npx wrangler deploy --dry-run` — proves the Worker and assets bundle
 
+## Deployment with GitHub Actions
+
+`.github/workflows/deploy.yml` deploys on every push to `main`, and can also be started by
+hand (**Actions → Deploy → Run workflow**, with an option to skip the D1 steps). It runs the
+same two scripts as Cloudflare Workers Builds, so both pipelines behave identically:
+
+```
+npm ci → npm test → bash scripts/cf-build.sh → bash scripts/cf-deploy.sh
+```
+
+`cf-build.sh` rebuilds the WASM module, downloads the Web Vault, fills in the D1 id, typechecks
+and dry-runs the bundle; `cf-deploy.sh` bootstraps/migrates D1 and runs `wrangler deploy`.
+
+### Required secrets
+
+| Secret | Required | Description |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | yes | Workers Scripts:Edit, D1:Edit, KV:Edit (+ R2:Edit when used) |
+| `CLOUDFLARE_ACCOUNT_ID` | yes | account id |
+| `D1_DATABASE_ID` | yes | production D1 database id |
+
+### Optional variables
+
+| Variable | Description |
+|---|---|
+| `BW_WEB_VERSION` | `bw_web_builds` tag (default `v2026.10.1`) |
+| `KV_ID` | `ATTACHMENTS_KV` namespace id; enables the KV binding |
+| `R2_NAME` | R2 bucket name; enables the `ATTACHMENTS_BUCKET` binding |
+| `SEED_GLOBAL_DOMAINS` | `false` to skip seeding global equivalent domains |
+| `GLOBAL_DOMAINS_URL` | pin a specific `global_domains.json` source |
+| `SKIP_D1` | `1` to skip all D1 bootstrap/migrate/seed steps |
+| `D1_NAME` | D1 **binding** name used by the migration steps (default `vault1`) |
+| `WORKER_URL` | enables the post-deploy smoke step (e.g. `https://vault.example.com`) |
+
+Runtime secrets (`JWT_SECRET`, `JWT_REFRESH_SECRET`, `ALLOWED_EMAILS`) are Worker secrets, not
+build inputs: set them once with `wrangler secret put` and every deploy keeps them. The
+workflow never touches them.
+
+> `D1_NAME` must be the binding (`vault1`), not the database's own name: `wrangler d1
+> migrations apply` only resolves bindings and `database_name` entries from `wrangler.toml`.
+
+### Scheduled backups
+
 `.github/workflows/backup-d1.yaml` exports the D1 database on a schedule and uploads it to
 S3 or WebDAV. It needs these repository secrets:
 
@@ -277,6 +320,7 @@ D1 migrations in `cf-deploy.sh` reuse that one token.
    |---|---|---|
    | `D1_DATABASE_ID` | yes | production D1 database id (substituted into `wrangler.toml`) |
    | `BW_WEB_VERSION` | no | `bw_web_builds` tag (default `v2026.10.1`); `latest` tracks upstream |
+   | `KV_ID` | no | `ATTACHMENTS_KV` namespace id; enables the KV binding |
    | `R2_NAME` | no | R2 bucket name; enables the `ATTACHMENTS_BUCKET` binding |
    | `SEED_GLOBAL_DOMAINS` | no | `false` to skip seeding global equivalent domains |
    | `GLOBAL_DOMAINS_URL` | no | pin a specific `global_domains.json` source |

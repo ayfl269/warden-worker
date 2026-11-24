@@ -2,7 +2,7 @@ name: TypeScript CI
 
 on:
   push:
-    branches: [main, uat, release*]
+    branches: [main, master, uat, release*]
   pull_request:
   workflow_dispatch:
 
