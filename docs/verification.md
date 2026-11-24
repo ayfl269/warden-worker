@@ -19,8 +19,6 @@ Expected: `tsc` exits 0, 289 tests pass, no lint errors, bundle builds (~99 KiB,
 
 | Area | Test | Notes |
 |---|---|---|
-| Route table | `tests/unit/route-parity.test.ts` | Parses `src/router.rs` and compares every `METHOD /path` with `app.routes`; param names normalized. Currently **exactly equal**. |
-| CPU-offload table | `tests/unit/heavy-routes.test.ts` | Parses `HEAVY_DO_ROUTE_METHODS` out of `src/entry.js` and compares path + method sets. Currently **exactly equal**. |
 | PBKDF2 | `tests/unit/password.test.ts` | Published PBKDF2-HMAC-SHA256 vectors (c=1/2/4096), cross-checked against `@noble/hashes`, 600k derivation. |
 | TOTP | `tests/unit/totp.test.ts` | RFC 6238 vectors (6 timestamps), replay protection, drift window, base32 RFC 4648 vector. |
 | JWT | `tests/unit/jwt.test.ts` | Claim names, 60s leeway, tamper/expiry rejection, attachment `exp = now + TTL - 60`. |
@@ -139,3 +137,10 @@ Manual matrix, run against a deployed instance:
 `route-parity.test.ts` reads `src/router.rs` and `heavy-routes.test.ts` reads `src/entry.js`.
 When the Rust sources are deleted at cutover, replace both with frozen snapshots of the
 expected route/method lists, or drop them once golden fixtures cover the same ground.
+
+## Removed at repository split
+
+`tests/unit/route-parity.test.ts` and `heavy-routes.test.ts` compared the TypeScript tables
+against `rust/router.rs` and `rust/entry.js`. Those files live in the original Rust repository,
+so the tests were dropped when this repository was split. The golden fixtures in
+`tests/golden/` still pin the observable behaviour.
