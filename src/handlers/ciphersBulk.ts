@@ -3,12 +3,14 @@ import { z } from 'zod';
 
 import { assertMasterPassword } from '../auth/verify';
 import { getDb, nowString } from '../db/client';
+import { listAttachmentKeysForCiphers, listAttachmentKeysForUser } from '../db/storageKeys';
 import { AppError } from '../errors';
 import { readJson } from '../http/body';
 import { jsonResponse } from '../http/rawJson';
 import { buildCipherResponse, type CipherRow, cipherListResponse } from '../models/cipherResponse';
 import type { UserRow } from '../models/user';
 import { publishCipherUpdate, publishUserUpdate } from '../notifications/publish';
+import { attachmentsEnabled, deleteStorageObjects } from '../storage';
 import type { AppEnv } from '../types';
 
 const SYNC_CIPHER_UPDATE = 0;
@@ -82,6 +84,12 @@ export async function bulkHardDeleteHandler(c: Context<AppEnv>): Promise<Respons
   const now = nowString();
 
   if (ids.length > 0) {
+    // Attachment objects first: the key query joins on `ciphers`.
+    if (attachmentsEnabled(c.env)) {
+      const keys = await listAttachmentKeysForCiphers(getDb(c.env), claims.sub, ids);
+      await deleteStorageObjects(c.env, keys);
+    }
+
     await getDb(c.env)
       .prepare(`DELETE FROM ciphers WHERE user_id = ?1 AND id IN (${placeholders(ids.length, 2)})`)
       .bind(claims.sub, ...ids)
@@ -242,6 +250,12 @@ export async function purgeVaultHandler(c: Context<AppEnv>): Promise<Response> {
   assertMasterPassword(user, hash);
 
   const now = nowString();
+  // Wipe the attachment objects before the rows they belong to disappear.
+  if (attachmentsEnabled(c.env)) {
+    const keys = await listAttachmentKeysForUser(db, claims.sub);
+    await deleteStorageObjects(c.env, keys);
+  }
+
   await db.prepare('DELETE FROM ciphers WHERE user_id = ?1').bind(claims.sub).run();
   await db.prepare('DELETE FROM folders WHERE user_id = ?1').bind(claims.sub).run();
   await touchUser(c, now);

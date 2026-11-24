@@ -34,7 +34,12 @@ export class FakeR2Bucket {
     return bytes === undefined ? null : { size: bytes.length };
   }
 
-  async delete(key: string): Promise<void> {
+  /** R2 accepts a single key or a batch, mirroring the real binding. */
+  async delete(key: string | string[]): Promise<void> {
+    if (Array.isArray(key)) {
+      for (const single of key) this.store.delete(single);
+      return;
+    }
     this.store.delete(key);
   }
 }

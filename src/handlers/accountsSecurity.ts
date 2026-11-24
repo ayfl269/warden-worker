@@ -4,12 +4,19 @@ import { z } from 'zod';
 import { generateSalt, hashPasswordForStorage, verifyPassword } from '../auth/password';
 import { getDb, nowString } from '../db/client';
 import { deleteUserDevices } from '../db/devices';
+import {
+  listAttachmentKeysForUser,
+  listPendingSendKeysForUser,
+  listSendKeysForUser,
+  sendStorageKeys,
+} from '../db/storageKeys';
 import { serverPasswordIterations } from '../env';
 import { AppError } from '../errors';
 import { readJson } from '../http/body';
 import { jsonResponse } from '../http/rawJson';
 import type { UserRow } from '../models/user';
 import { publishUserLogout } from '../notifications/publish';
+import { attachmentsEnabled, deleteStorageObjects } from '../storage';
 import type { AppEnv } from '../types';
 
 const passwordSchema = z.object({
@@ -121,6 +128,17 @@ export async function deleteAccountHandler(c: Context<AppEnv>): Promise<Response
   assertPassword(user, payload.masterPasswordHash);
 
   const db = getDb(c.env);
+
+  // Wipe every object this user owns before the rows that name them are gone.
+  if (attachmentsEnabled(c.env)) {
+    const keys = [
+      ...(await listAttachmentKeysForUser(db, user.id)),
+      ...sendStorageKeys(await listSendKeysForUser(db, user.id)),
+      ...sendStorageKeys(await listPendingSendKeysForUser(db, user.id)),
+    ];
+    await deleteStorageObjects(c.env, keys);
+  }
+
   await db.batch([
     db.prepare('DELETE FROM ciphers WHERE user_id = ?1').bind(user.id),
     db.prepare('DELETE FROM folders WHERE user_id = ?1').bind(user.id),

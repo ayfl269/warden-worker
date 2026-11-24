@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import { z } from 'zod';
 
 import { getDb, nowString } from '../db/client';
+import { listAttachmentKeysForCiphers } from '../db/storageKeys';
 import { AppError } from '../errors';
 import { readJson } from '../http/body';
 import { jsonResponse } from '../http/rawJson';
@@ -13,6 +14,7 @@ import {
 } from '../models/cipher';
 import { buildCipherResponse, type CipherRow, cipherListResponse } from '../models/cipherResponse';
 import { publishCipherUpdate } from '../notifications/publish';
+import { attachmentsEnabled, deleteStorageObjects } from '../storage';
 import type { AppEnv } from '../types';
 
 const CIPHER_NOT_FOUND = 'Cipher not found';
@@ -271,6 +273,13 @@ export async function hardDeleteCipherHandler(c: Context<AppEnv>): Promise<Respo
   const row = await loadCipher(c, c.req.param('id') ?? '');
   const claims = c.get('claims');
   const now = nowString();
+
+  // Collect the attachment objects before the rows disappear: the key query
+  // joins on `ciphers`, so it has to run first.
+  if (attachmentsEnabled(c.env)) {
+    const keys = await listAttachmentKeysForCiphers(getDb(c.env), claims.sub, [row.id]);
+    await deleteStorageObjects(c.env, keys);
+  }
 
   await getDb(c.env)
     .prepare('DELETE FROM ciphers WHERE id = ?1 AND user_id = ?2')

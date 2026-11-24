@@ -46,6 +46,33 @@ export async function deleteStorageObject(env: Env, key: string): Promise<void> 
   }
 }
 
+/**
+ * Delete many objects, mirroring `attachments::delete_storage_objects`.
+ *
+ * Best effort on purpose: a storage hiccup must not block deleting the database
+ * rows (which would leave the user unable to delete anything). R2 gets a single
+ * multi-object delete; KV has no batch API, so it is one call per key.
+ */
+export async function deleteStorageObjects(env: Env, keys: readonly string[]): Promise<void> {
+  if (keys.length === 0) return;
+
+  const backend = getStorageBackend(env);
+  if (backend === null) return;
+
+  if (backend.kind === 'r2') {
+    try {
+      await backend.bucket.delete([...keys]);
+      return;
+    } catch (error) {
+      console.warn('[storage] bulk delete failed, falling back to one-by-one', error);
+    }
+  }
+
+  for (const key of keys) {
+    await deleteStorageObject(env, key);
+  }
+}
+
 /** Store an in-memory payload (legacy multipart upload paths). */
 export async function putStorageBytes(
   env: Env,
