@@ -69,23 +69,33 @@ known trade-off listed below.
 
 ## Known limitations (not vulnerabilities in the reported sense)
 
-- **Password hints are returned in-band.** Bitwarden emails the hint; this project has no
-  mail delivery, so `POST /api/accounts/password-hint` returns it in the response body to an
-  unauthenticated caller (the reference implementation does the same). Anyone who can reach
-  the endpoint and knows an email address can read that user's hint. Keep hints vague, or
-  block the endpoint at the edge if that matters to you.
-- **Login timing reveals whether an account exists.** A known user pays a real 600k
-  PBKDF2 (~1.4 s); an unknown one only pays `LOGIN_MISSING_USER_DELAY_MS` (default 550 ms).
-  Raise that variable to roughly the PBKDF2 cost if this matters. `prelogin` responses are
-  identical either way.
-- **Rate limiting fails open.** A missing or failing rate-limit binding disables the limit
-  rather than rejecting traffic (matching the reference implementation). Keep the
+- **Rate limiting fails open.** A failing rate-limit binding allows the request
+  rather than rejecting traffic (matching the reference implementation), so a limiter outage
+  cannot take the API down. A *missing* binding is logged once per isolate. Keep the
   `[[ratelimits]]` bindings in place.
-- **KDF iteration counts are only lower-bounded.** A client can store a count it can never
-  derive, locking itself out; no server-side path uses that value for work.
-- **Internal error text is echoed on 500s** (`Worker error: <binding message>`), matching the
-  reference implementation. It can reveal binding names and, on registration, whether an
-  email is already taken.
-- **No per-device revocation endpoint.** Only the global logout-all (`security-stamp`) and
-  password change invalidate sessions; refresh tokens are not rotated on use.
+- **Refresh tokens are not rotated** on use and there is no reuse detection. Revoking a
+  session means logout-all (`security-stamp`) or deleting the device
+  (`DELETE /api/devices/{id}`).
+- **CORS allows any origin** (`access-control-allow-origin: *`, no credentials). Auth is
+  Bearer-only, so this is not exploitable by itself, but it lets any web origin read
+  token-authenticated responses if it ever obtains a token.
+- **Send recipients see the creator's email** unless the sender sets `hideEmail`.
+- **Password hints are never delivered.** There is no mail transport, so the hint endpoint
+  answers an empty `200` (Bitwarden's "sent" response). `EXPOSE_PASSWORD_HINTS=1` restores
+  returning it in the body for single-user deployments.
+
+## Divergences from the reference implementation
+
+These are deliberate hardening changes made after the security review; each one narrows
+behaviour rather than changing a response for legitimate traffic.
+
+- `POST /api/sends/{send_id}/access/file/{file_id}` requires the Send password (the reference
+  implementation let any caller mint a download token).
+- Authenticated master-password re-checks (change password, change KDF, rotate keys, purge
+  vault, delete account) are rate limited per user (5/min).
+- `Worker error` 500s no longer echo the underlying binding message; it is logged instead.
+- `LOGIN_MISSING_USER_DELAY_MS` defaults to 1200ms instead of 550ms, so an unknown account is
+  not distinguishable by response time.
+- KDF parameters are upper-bounded (PBKDF2 ≤ 2,000,000; Argon2 iterations ≤ 100).
+- `DELETE /api/devices/{id}` revokes a single session.
 

@@ -31,6 +31,14 @@ export const KDF_TYPE_ARGON2ID = 1;
 
 export const MIN_PBKDF2_ITERATIONS = 100_000;
 export const DEFAULT_PBKDF2_ITERATIONS = 600_000;
+/**
+ * Upper bounds. Not enforced by the reference implementation, but an unbounded
+ * value lets a client store KDF parameters no client can ever derive again
+ * (self-lockout) and would become a CPU sink for anything that later trusts it.
+ * The ceilings match what the Bitwarden clients accept.
+ */
+export const MAX_PBKDF2_ITERATIONS = 2_000_000;
+export const MAX_ARGON2_ITERATIONS = 100;
 
 export interface KdfParams {
   kdf: number;
@@ -45,12 +53,18 @@ export function ensureSupportedKdf(kdf: KdfParams): void {
     if (!Number.isInteger(kdf.kdfIterations) || kdf.kdfIterations < MIN_PBKDF2_ITERATIONS) {
       throw AppError.badRequest('PBKDF2 iterations must be at least 100000');
     }
+    if (kdf.kdfIterations > MAX_PBKDF2_ITERATIONS) {
+      throw AppError.badRequest('PBKDF2 iterations must not exceed 2000000');
+    }
     return;
   }
 
   if (kdf.kdf === KDF_TYPE_ARGON2ID) {
     if (!Number.isInteger(kdf.kdfIterations) || kdf.kdfIterations < 1) {
       throw AppError.badRequest('Argon2 KDF iterations must be at least 1');
+    }
+    if (kdf.kdfIterations > MAX_ARGON2_ITERATIONS) {
+      throw AppError.badRequest('Argon2 KDF iterations must not exceed 100');
     }
     if (kdf.kdfMemory === undefined || kdf.kdfMemory === null) {
       throw AppError.badRequest('Argon2 memory parameter is required');

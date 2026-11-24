@@ -41,6 +41,16 @@ export async function passwordHintHandler(c: Context<AppEnv>): Promise<Response>
     .first<{ master_password_hint: string | null }>();
 
   const hint = row?.master_password_hint?.trim();
+
+  // Bitwarden emails the hint and answers 200 with an empty body. There is no
+  // mail delivery here, so returning the hint in the response would hand any
+  // anonymous caller a hint for every address they know — and users routinely
+  // put the password itself (or a one-step clue) in it. Default to the empty
+  // 200; operators who rely on reading the hint can opt in.
+  if (c.env.EXPOSE_PASSWORD_HINTS !== '1') {
+    return jsonResponse({});
+  }
+
   if (hint === undefined || hint.length === 0) {
     throw AppError.badRequest('Sorry, you have no password hint...');
   }

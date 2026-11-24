@@ -76,24 +76,38 @@ beforeEach(async () => {
 });
 
 describe('password hint', () => {
-  it('returns the stored hint in the error message', async () => {
+  // The hint is a secret: returning it to an anonymous caller leaks it for any
+  // address they know. Bitwarden emails it and answers with an empty 200.
+  it('does not disclose the hint by default', async () => {
     const response = await app.fetch(
       jsonRequest('/api/accounts/password-hint', { email: EMAIL }),
       env,
       executionContext,
     );
-    expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: 'Your password hint is: my hint' });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({});
   });
 
-  it('returns the generic message for unknown emails', async () => {
+  it('answers identically for an unknown email', async () => {
     const response = await app.fetch(
       jsonRequest('/api/accounts/password-hint', { email: 'nobody@example.com' }),
       env,
       executionContext,
     );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({});
+  });
+
+  it('still returns the hint when EXPOSE_PASSWORD_HINTS=1', async () => {
+    const exposed = { ...env, EXPOSE_PASSWORD_HINTS: '1' } as unknown as Env;
+
+    const response = await app.fetch(
+      jsonRequest('/api/accounts/password-hint', { email: EMAIL }),
+      exposed,
+      executionContext,
+    );
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: 'Sorry, you have no password hint...' });
+    expect(await response.json()).toEqual({ error: 'Your password hint is: my hint' });
   });
 });
 

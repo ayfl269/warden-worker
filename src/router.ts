@@ -53,6 +53,7 @@ import {
 } from './handlers/ciphersBulk';
 import { configHandler } from './handlers/config';
 import {
+  deleteDeviceHandler,
   getDeviceHandler,
   getDevicesHandler,
   getKnownDeviceHandler,
@@ -199,6 +200,8 @@ export function apiRouter(): Hono<AppEnv> {
   router.get('/api/devices', auth, getDevicesHandler);
   router.get('/api/devices/knowndevice', getKnownDeviceHandler);
   router.get('/api/devices/identifier/:device_id', auth, getDeviceHandler);
+  router.delete('/api/devices/:id', auth, deleteDeviceHandler);
+  router.delete('/api/devices/identifier/:device_id', auth, deleteDeviceHandler);
   router.post('/api/devices/identifier/:device_id/token', auth, postDeviceTokenHandler);
   router.put('/api/devices/identifier/:device_id/token', auth, putDeviceTokenHandler);
   router.put('/api/devices/identifier/:device_id/clear-token', auth, putClearDeviceTokenHandler);

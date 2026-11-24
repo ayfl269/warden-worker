@@ -174,6 +174,41 @@ describe('device lookup', () => {
   });
 });
 
+describe('device revocation', () => {
+  it('deletes the device and invalidates its session', async () => {
+    const revoked = await app.fetch(
+      new Request('https://example.com/api/devices/device-1', {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${token}` },
+      }),
+      env,
+      executionContext,
+    );
+    expect(revoked.status).toBe(200);
+
+    // The auth middleware requires the device row to still exist.
+    const after = await app.fetch(
+      getRequest('/api/accounts/profile', token),
+      env,
+      executionContext,
+    );
+    expect(after.status).toBe(401);
+  });
+
+  it('returns 404 for a device owned by somebody else', async () => {
+    const response = await app.fetch(
+      new Request('https://example.com/api/devices/not-mine', {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${token}` },
+      }),
+      env,
+      executionContext,
+    );
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: 'Device not found' });
+  });
+});
+
 describe('push token management', () => {
   it('stores a push token', async () => {
     const response = await app.fetch(

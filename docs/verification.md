@@ -147,6 +147,10 @@ Manual matrix, run against a deployed instance:
 2. Malformed request bodies return plain-text rejections with matching status codes
    (400/415/422) but not byte-identical messages.
 3. Response header ordering may differ.
+4. Deliberate hardening after the security review — file-Send password enforcement,
+   throttled master-password re-checks, generic 500 bodies, a 1200 ms missing-user delay,
+   KDF upper bounds and `DELETE /api/devices/{id}`. See
+   [SECURITY.md](../SECURITY.md#divergences-from-the-reference-implementation).
 
 ## Removed at repository split
 

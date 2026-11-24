@@ -226,3 +226,44 @@ export const postDeviceTokenHandler = upsertPushToken;
 export const putDeviceTokenHandler = upsertPushToken;
 export const putClearDeviceTokenHandler = clearPushToken;
 export const postClearDeviceTokenHandler = clearPushToken;
+
+/**
+ * `DELETE /api/devices/{id}` — revoke a single session.
+ *
+ * Deleting the row is enough: the auth middleware re-checks that the device
+ * referenced by the token still exists, so the next request from that device
+ * gets a 401. No notification is published — the hub tags connections per user,
+ * not per device, so a `LogOut` frame would kick every session.
+ */
+export async function deleteDeviceHandler(c: Context<AppEnv>): Promise<Response> {
+  const identifier = c.req.param('id') ?? c.req.param('device_id') ?? '';
+  const claims = c.get('claims');
+
+  const db = getDb(c.env);
+  const device = await db
+    .prepare('SELECT push_uuid FROM devices WHERE identifier = ?1 AND user_id = ?2')
+    .bind(identifier, claims.sub)
+    .first<{ push_uuid: string | null }>();
+
+  if (device === null) {
+    throw AppError.notFound('Device not found');
+  }
+
+  // Best effort: a stale relay registration is harmless, a failed call is not
+  // a reason to keep the session alive.
+  const cfg = pushConfig(c.env);
+  if (cfg !== null && device.push_uuid !== null) {
+    try {
+      await unregisterPushDevice(cfg, device.push_uuid);
+    } catch (error) {
+      console.warn('[devices] push unregister failed', error);
+    }
+  }
+
+  await db
+    .prepare('DELETE FROM devices WHERE identifier = ?1 AND user_id = ?2')
+    .bind(identifier, claims.sub)
+    .run();
+
+  return jsonResponse(null);
+}

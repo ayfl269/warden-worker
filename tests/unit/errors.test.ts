@@ -5,12 +5,9 @@ import { AppError, isAppError } from '../../src/errors';
 describe('AppError', () => {
   it('maps every variant to the Rust status/body pair', () => {
     const cases: Array<[AppError, number, string, string]> = [
-      [
-        AppError.worker(new Error('boom')),
-        500,
-        'application/json',
-        '{"error":"Worker error: boom"}',
-      ],
+      // `worker` deliberately hides the underlying binding message; it is
+      // logged instead of returned (see errors.ts).
+      [AppError.worker(new Error('boom')), 500, 'application/json', '{"error":"Worker error"}'],
       [AppError.database(), 500, 'application/json', '{"error":"Database error"}'],
       [
         AppError.notFound('Cipher not found'),

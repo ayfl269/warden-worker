@@ -13,11 +13,6 @@ function jsonError(message: string): string {
   return JSON.stringify({ error: message });
 }
 
-function describe(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
-}
-
 export class AppError extends Error {
   readonly status: number;
   readonly body: string;
@@ -38,9 +33,16 @@ export class AppError extends Error {
     });
   }
 
-  /** 500 `Worker error: {e}` — an unexpected binding/runtime failure. */
+  /**
+   * 500 `Worker error` — an unexpected binding/runtime failure.
+   *
+   * The underlying message is logged, never returned: binding errors name
+   * namespaces, buckets and (on registration) whether an email is already
+   * taken, which is a free enumeration oracle for an anonymous caller.
+   */
   static worker(error: unknown): AppError {
-    return new AppError(500, jsonError(`Worker error: ${describe(error)}`));
+    console.error('[worker] binding/runtime error', error);
+    return new AppError(500, jsonError('Worker error'));
   }
 
   /** 500 `Database error` — a D1 failure whose details are not exposed. */

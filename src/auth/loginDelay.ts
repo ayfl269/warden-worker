@@ -1,7 +1,15 @@
 import type { Env } from '../env';
 
-/** Default base delay for a non-existent login user (`LOGIN_MISSING_USER_DELAY_MS`). */
-export const DEFAULT_MISSING_USER_DELAY_MS = 550;
+/**
+ * Default base delay for a non-existent login user (`LOGIN_MISSING_USER_DELAY_MS`).
+ *
+ * Sized to the measured cost of a real 600k-iteration PBKDF2 on the edge
+ * (~1.2s end to end) so that "no such user" and "wrong password" are not
+ * distinguishable by response time. The reference implementation used 550ms,
+ * which left a ~1s gap; operators should re-tune this after changing
+ * `PASSWORD_ITERATIONS`.
+ */
+export const DEFAULT_MISSING_USER_DELAY_MS = 1200;
 
 /** Jitter range applied to the base delay: ±30ms. */
 export const MISSING_USER_JITTER_MS = 30;

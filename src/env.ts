@@ -47,6 +47,8 @@ export type Env = {
   readonly SEND_TTL_SECS?: string;
   readonly DISABLE_USER_REGISTRATION?: string;
   readonly AUTHENTICATOR_DISABLE_TIME_DRIFT?: string;
+  /** Return password hints in the response body (default: off, hint is not exposed). */
+  readonly EXPOSE_PASSWORD_HINTS?: string;
 };
 
 /** Strict `usize` parser: rejects negatives, decimals and trailing garbage. */

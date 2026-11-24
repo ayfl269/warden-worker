@@ -113,7 +113,7 @@ Environment variables live under `[vars]` in `wrangler.toml` (or the Cloudflare 
 |---|---|---|
 | `BASE_URL` | derived from the request | Overrides the base URL used in file/Send URLs |
 | `PASSWORD_ITERATIONS` | `600000` | Server-side PBKDF2 iterations (clamped up to 600k) |
-| `LOGIN_MISSING_USER_DELAY_MS` | `550` | Base delay for unknown users (±30ms jitter) |
+| `LOGIN_MISSING_USER_DELAY_MS` | `1200` | Base delay for unknown users (±30ms jitter); tune to the real PBKDF2 cost so timing does not reveal account existence |
 | `IMPORT_BATCH_SIZE` | `30` | Batch size for import / bulk rewrites (`0` = single batch) |
 | `TRASH_AUTO_DELETE_DAYS` | `30` | Days before soft-deleted ciphers are purged (`0` disables) |
 | `CIPHERS_DEFAULT_ROW_QUERY` | `false` | Fetch cipher JSON per row (avoids `SQLITE_TOOBIG`) |
@@ -127,6 +127,7 @@ Environment variables live under `[vars]` in `wrangler.toml` (or the Cloudflare 
 | `SEND_TTL_SECS` | `300` | Send upload/download URL lifetime |
 | `DISABLE_USER_REGISTRATION` | `true` | Hides the registration button in the web UI |
 | `AUTHENTICATOR_DISABLE_TIME_DRIFT` | `false` | Set `true` to reject TOTP codes outside the current step |
+| `EXPOSE_PASSWORD_HINTS` | `false` | Set `1` to return the password hint in the API response (default: hint is not disclosed) |
 | `PUSH_ENABLED` | `false` | Enables mobile push (requires the secrets below) |
 | `PUSH_RELAY_URI` | `https://push.bitwarden.com` | Push relay override |
 | `PUSH_IDENTITY_URI` | `https://identity.bitwarden.com` | Push identity override |

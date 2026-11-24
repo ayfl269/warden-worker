@@ -5,10 +5,18 @@ import { AppError } from '../errors';
 export type RateLimiterBinding = 'LOGIN_RATE_LIMITER' | 'SEND_ACCESS_RATE_LIMITER';
 
 /**
+ * Bindings already reported as missing, so a misconfigured deployment is loud
+ * in the logs without logging on every request.
+ */
+const warnedMissingBindings = new Set<string>();
+
+/**
  * Enforce a rate limit.
  *
- * Matches the Rust helper exactly: a missing binding or a failing `limit()`
- * call is fail-open; only `success === false` rejects the request.
+ * Matches the Rust helper: a failing `limit()` call is fail-open, so a limiter
+ * outage cannot take the API down. A *missing* binding is also fail-open for
+ * compatibility with minimal deployments, but it is a deployment bug that
+ * silently disables brute-force protection, so it is logged once per isolate.
  */
 export async function enforceRateLimit(
   env: Env,
@@ -17,7 +25,16 @@ export async function enforceRateLimit(
   errorMessage: string,
 ): Promise<void> {
   const limiter = env[binding];
-  if (limiter === undefined) return;
+  if (limiter === undefined) {
+    if (!warnedMissingBindings.has(binding)) {
+      warnedMissingBindings.add(binding);
+      console.warn(
+        `[rate-limit] binding '${binding}' is missing; requests are NOT rate limited. ` +
+          'Restore the [[ratelimits]] block in wrangler.toml.',
+      );
+    }
+    return;
+  }
 
   let success: boolean;
   try {
