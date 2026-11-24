@@ -116,6 +116,11 @@ npx wrangler secret put ALLOWED_EMAILS          # e.g. "*@example.com", comma se
 `ALLOWED_EMAILS` is mandatory: registration returns `401 Not allowed to signup` unless the
 raw email matches one of the globs, and a missing secret yields `500`.
 
+`JWT_SECRET` and `JWT_REFRESH_SECRET` are only needed to *sign* tokens, so a deployment that
+forgets them still registers accounts and then answers every login with `500
+{"error":"Internal server error"}`. Check with `npx wrangler secret list` (names only) and
+watch `npx wrangler tail` while retrying the login: the worker logs which secret is missing.
+
 Optional mobile push relay settings: `PUSH_ENABLED`, `PUSH_RELAY_URI`,
 `PUSH_IDENTITY_URI` as plain vars, and `PUSH_INSTALLATION_ID`,
 `PUSH_INSTALLATION_KEY` as secrets. See

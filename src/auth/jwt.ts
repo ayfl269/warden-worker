@@ -84,6 +84,13 @@ function signingKey(secret: string): Uint8Array {
 export function jwtSecret(env: Env, name: 'JWT_SECRET' | 'JWT_REFRESH_SECRET'): string {
   const value = env[name];
   if (value === undefined || value.length === 0) {
+    // Registration does not sign tokens, so a deployment missing the secrets
+    // registers fine and then answers every login with an opaque 500. Log the
+    // cause: it is a deployment mistake, and the value itself is never printed.
+    console.error(
+      `[auth] ${name} is not set; refusing to sign tokens. ` +
+        `Set it with: wrangler secret put ${name}`,
+    );
     throw AppError.internal();
   }
   return value;
