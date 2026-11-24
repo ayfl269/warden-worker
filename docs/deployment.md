@@ -130,7 +130,24 @@ npm run deploy
 This bundles `src/index.ts` and the PBKDF2 WebAssembly module, uploads the Worker, and
 uploads `public/web-vault` as static assets.
 
-### 8. Verify
+### 8. Create the first account
+
+`/api/config` reports `disableUserRegistration: true` unless
+`DISABLE_USER_REGISTRATION` is literally `"false"`, and the Web Vault hides the "Create
+account" button accordingly. On a fresh deployment there is no visible way to register, so
+enable it for the first signup:
+
+```bash
+npx wrangler deploy --var DISABLE_USER_REGISTRATION:false
+# register at https://<worker-url>/ (the link is at the bottom of the login page)
+npx wrangler deploy --var DISABLE_USER_REGISTRATION:true
+```
+
+The email must match `ALLOWED_EMAILS`; widen that to `*` temporarily if needed. Register
+through the browser rather than the API: the client derives the master key and hash from the
+password you type, so an account created with arbitrary API values cannot be logged into.
+
+### 9. Verify
 
 ```bash
 curl -s https://<worker-url>/api/config | jq .version   # "2026.6.0"

@@ -76,3 +76,8 @@ html_handling = "auto-trailing-slash"
 run_worker_first = ["/api/*", "/identity/*", "/notifications/*"]
 
 [vars]
+
+# The web vault hides its "Create account" button unless this is literally
+# "false". Keep it unset once your account exists; set it temporarily to create
+# the first one (and remember ALLOWED_EMAILS must match the address).
+# DISABLE_USER_REGISTRATION = "false"

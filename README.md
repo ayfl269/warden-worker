@@ -82,6 +82,31 @@ npx wrangler secret put ALLOWED_EMAILS        # comma-separated globs, e.g. "*@e
 (case-sensitive) and any non-match returns `401 Not allowed to signup`. A missing secret
 makes registration fail with `500`.
 
+### Create the first account
+
+The Web Vault hides its "Create account" button by default, because
+`DISABLE_USER_REGISTRATION` is treated as `true` unless it is literally `false`. On a fresh
+deployment that leaves no visible way in, so turn the button on, register, then turn it off:
+
+```bash
+# 1. show the button (plain variable, not a secret)
+npx wrangler deploy --var DISABLE_USER_REGISTRATION:false
+#    or set DISABLE_USER_REGISTRATION = "false" under [vars] in wrangler.toml and deploy
+
+# 2. open https://vault.example.com/, click "Create account", register
+
+# 3. close it again once the account exists
+npx wrangler deploy --var DISABLE_USER_REGISTRATION:true
+```
+
+The email must match `ALLOWED_EMAILS` (set it to `*` while bootstrapping, then narrow it to
+your own address). Registering through the UI matters: the browser derives the master key and
+hash from your password, so an account created by a raw API call with arbitrary values cannot
+be logged into.
+
+After the account exists you can log in from the web vault, the browser extension and the
+mobile apps — registration is only needed once.
+
 ### Database
 
 Replace `REPLACE_WITH_YOUR_D1_DATABASE_ID` in `wrangler.toml` with the id from
