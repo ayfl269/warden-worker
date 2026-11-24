@@ -145,8 +145,8 @@ By default the `*.workers.dev` hostname is enabled (`workers_dev = true`) but ca
 ## Frontend
 
 The Web Vault is a prebuilt Angular bundle published by the Vaultwarden project as
-`bw_web_builds` releases. It is not committed: it is ~36 MB compressed / ~67 MB extracted,
-255 files of generated code that this repository never edits.
+`bw_web_builds` releases. It is not committed: it is ~40 MB compressed / ~80 MB extracted,
+267 files of generated code that this repository never edits.
 
 ### How it is served
 
@@ -170,11 +170,16 @@ no SPA fallback rewrite is needed and unknown paths correctly return `404.html`.
 ### Version pinning
 
 ```bash
-npm run frontend                                  # pinned default (v2026.6.4)
-BW_WEB_VERSION=v2026.10.1 npm run frontend        # specific tag
+npm run frontend                                  # pinned default (v2026.10.1)
+BW_WEB_VERSION=v2026.11.0 npm run frontend        # specific tag
 BW_WEB_VERSION=latest npm run frontend            # newest release
 npm run frontend -- --force                       # re-download the current tag
 ```
+
+The pinned default tracks the newest **stable** `bw_web_builds` release. Tags flagged
+*prerelease* upstream (for example `v2026.11.0`, published as a preview of the next
+Bitwarden release) work as well — they were verified against this server — but they are
+opt-in on purpose. `latest` resolves whatever the newest release is, prerelease included.
 
 The download is skipped once a complete tree has been extracted — tracked by
 `public/.web-vault-version`, not by `index.html`, so an interrupted extraction is retried
@@ -182,10 +187,19 @@ instead of being mistaken for a good install. Always pass `--force` when changin
 `BW_WEB_VERSION`: a stale tree would keep hashed chunks that the new `index.html` no longer
 references.
 
-The downloader resumes across dropped connections and verifies the archive against the
-release's published `sha256sums.txt`, because GitHub release downloads are slow enough that
-a truncated transfer is a realistic failure mode — and a truncated `.tar.gz` still extracts
-partially, producing a site that is missing lazy-loaded chunks.
+The downloader resumes across dropped connections, verifies the archive against the
+release's published `sha256sums.txt`, and starts over once if the checksum does not match —
+a truncated `.tar.gz` still extracts partially, producing a site that is missing
+lazy-loaded chunks, and a corrupted partial file is only detectable by hash.
+
+Slow or filtered network? Node's `fetch` only honours a proxy when told to:
+
+```bash
+HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 \
+  NODE_USE_ENV_PROXY=1 npm run frontend -- --force
+```
+
+The same variables make `scripts/cf-build.sh` faster on a constrained build runner.
 
 ### UI override
 
@@ -262,7 +276,7 @@ D1 migrations in `cf-deploy.sh` reuse that one token.
    | Name | Required | Description |
    |---|---|---|
    | `D1_DATABASE_ID` | yes | production D1 database id (substituted into `wrangler.toml`) |
-   | `BW_WEB_VERSION` | no | `bw_web_builds` tag (default `v2026.6.4`); `latest` tracks upstream |
+   | `BW_WEB_VERSION` | no | `bw_web_builds` tag (default `v2026.10.1`); `latest` tracks upstream |
    | `R2_NAME` | no | R2 bucket name; enables the `ATTACHMENTS_BUCKET` binding |
    | `SEED_GLOBAL_DOMAINS` | no | `false` to skip seeding global equivalent domains |
    | `GLOBAL_DOMAINS_URL` | no | pin a specific `global_domains.json` source |

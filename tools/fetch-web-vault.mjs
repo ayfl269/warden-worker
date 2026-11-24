@@ -3,15 +3,19 @@
  * Download the Bitwarden Web Vault frontend into `public/web-vault`.
  *
  * The frontend is a prebuilt Angular bundle published by the Vaultwarden project
- * as `bw_web_builds` releases. It is *not* committed (see `.gitignore`): ~36 MB
- * compressed, ~67 MB extracted, and this repository never edits it. `wrangler.toml`
+ * as `bw_web_builds` releases. It is *not* committed (see `.gitignore`): ~40 MB
+ * compressed, ~80 MB extracted, and this repository never edits it. `wrangler.toml`
  * serves it as Cloudflare static assets straight out of `public/web-vault`.
  *
  * Usage:
  *   node tools/fetch-web-vault.mjs                 # default pinned tag
  *   node tools/fetch-web-vault.mjs --force         # re-download even if present
  *   node tools/fetch-web-vault.mjs --version latest
- *   BW_WEB_VERSION=v2026.10.1 node tools/fetch-web-vault.mjs
+ *   BW_WEB_VERSION=v2026.11.0 node tools/fetch-web-vault.mjs
+ *
+ * Slow or filtered network? Node's fetch only honours a proxy when told to:
+ *   HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 \
+ *     NODE_USE_ENV_PROXY=1 node tools/fetch-web-vault.mjs --force
  *
  * The script is idempotent: it exits immediately once a complete tree has been
  * extracted (tracked by `public/.web-vault-version`), so `npm run dev` and
@@ -34,7 +38,7 @@ import process from 'node:process';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-const DEFAULT_VERSION = 'v2026.6.4';
+const DEFAULT_VERSION = 'v2026.10.1';
 const RELEASES_API = 'https://api.github.com/repos/dani-garcia/bw_web_builds/releases';
 const REPO_ROOT = path.resolve(import.meta.dirname, '..');
 const PUBLIC_DIR = path.join(REPO_ROOT, 'public');
@@ -246,6 +250,40 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 }
 
+/**
+ * Download `url` into `tarball` and verify it against the published checksum.
+ *
+ * A partial file left behind by an interrupted run is normally safe to resume,
+ * but it can also be corrupt (a killed process, a proxy that rewrote bytes).
+ * The checksum is the only way to tell, so a mismatch discards the file and
+ * downloads once more from zero before giving up.
+ */
+async function downloadVerified(url, releaseBase, asset, tarball) {
+  const expected = await publishedChecksum(releaseBase, asset);
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const size = await download(url, tarball);
+    console.log(`  received ${formatBytes(size)}`);
+
+    if (expected === null) {
+      console.log('  no published sha256 found, skipping verification');
+      return;
+    }
+
+    const actual = await sha256File(tarball);
+    if (actual === expected) {
+      console.log('  sha256 verified');
+      return;
+    }
+
+    await rm(tarball, { force: true });
+    if (attempt === 2) {
+      throw new Error(`checksum mismatch for ${asset}: expected ${expected}, got ${actual}`);
+    }
+    console.log('  checksum mismatch on the partial file, starting over from zero');
+  }
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const indexHtml = path.join(TARGET_DIR, 'index.html');
@@ -265,22 +303,7 @@ async function main() {
   console.log(`  downloading ${url}`);
   await mkdir(PUBLIC_DIR, { recursive: true });
   const tarball = path.join(PUBLIC_DIR, asset);
-  const size = await download(url, tarball);
-  console.log(`  received ${formatBytes(size)}`);
-
-  // A truncated transfer can still extract partially, so verify the archive
-  // against the checksum the release publishes next to it.
-  const expected = await publishedChecksum(releaseBase, asset);
-  if (expected === null) {
-    console.log('  no published sha256 found, skipping verification');
-  } else {
-    const actual = await sha256File(tarball);
-    if (actual !== expected) {
-      await rm(tarball, { force: true });
-      throw new Error(`checksum mismatch for ${asset}: expected ${expected}, got ${actual}`);
-    }
-    console.log('  sha256 verified');
-  }
+  await downloadVerified(url, releaseBase, asset, tarball);
 
   // A stale tree would leave files from a previous tag behind (e.g. hashed
   // chunk names that no longer exist in index.html), so always start clean.
