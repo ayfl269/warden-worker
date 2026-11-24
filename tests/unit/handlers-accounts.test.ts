@@ -81,6 +81,83 @@ beforeEach(async () => {
   token = await registerAndLogin();
 });
 
+// Regression: the Web Vault sends the SDK property names
+// (`masterPasswordAuthenticationHash` / `masterKeyWrappedUserKey`), while the
+// reference implementation accepts both spellings through serde aliases. The
+// port only accepted `hash` / `key`, so every registration from the browser
+// failed with "expected string, received undefined".
+describe('registration payload compatibility', () => {
+  const kdf = { kdfType: 0, iterations: 600000 };
+
+  function base(email: string): Record<string, unknown> {
+    return {
+      email,
+      name: 'User',
+      masterPasswordHint: null,
+      userAsymmetricKeys: { publicKey: 'pk', encryptedPrivateKey: 'epk' },
+    };
+  }
+
+  it('accepts the SDK field names sent by current clients', async () => {
+    const email = 'sdk@example.com';
+    const response = await app.fetch(
+      jsonRequest('/identity/accounts/register', {
+        ...base(email),
+        masterPasswordAuthentication: {
+          kdf,
+          salt: email,
+          masterPasswordAuthenticationHash: CLIENT_HASH,
+        },
+        masterPasswordUnlock: {
+          kdf,
+          salt: email,
+          masterKeyWrappedUserKey: 'wrapped-user-key',
+        },
+      }),
+      env,
+      executionContext,
+    );
+    expect(response.status).toBe(200);
+
+    const row = d1.raw
+      .prepare('SELECT key, kdf_iterations FROM users WHERE email = ?')
+      .get(email) as {
+      key: string;
+      kdf_iterations: number;
+    };
+    expect(row.key).toBe('wrapped-user-key');
+    expect(row.kdf_iterations).toBe(600000);
+  });
+
+  it('still accepts the short hash/key spelling', async () => {
+    const email = 'short@example.com';
+    const response = await app.fetch(
+      jsonRequest('/identity/accounts/register', {
+        ...base(email),
+        masterPasswordAuthentication: { kdf, salt: email, hash: CLIENT_HASH },
+        masterPasswordUnlock: { kdf, salt: email, key: 'wrapped-user-key' },
+      }),
+      env,
+      executionContext,
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it('rejects a payload with neither spelling', async () => {
+    const email = 'empty@example.com';
+    const response = await app.fetch(
+      jsonRequest('/identity/accounts/register', {
+        ...base(email),
+        masterPasswordAuthentication: { kdf, salt: email },
+        masterPasswordUnlock: { kdf, salt: email },
+      }),
+      env,
+      executionContext,
+    );
+    expect(response.status).toBe(422);
+  });
+});
+
 describe('profile', () => {
   it('returns the profile with a microsecond creationDate', async () => {
     const response = await app.fetch(

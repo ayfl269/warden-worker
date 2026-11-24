@@ -31,10 +31,27 @@ const registerSchema = z.object({
   email: z.string(),
   masterPasswordHint: z.string().nullish(),
   userAsymmetricKeys: z.object({ publicKey: z.string(), encryptedPrivateKey: z.string() }),
+  // Clients since 2026.5 send separate authentication/unlock data, and the
+  // field names differ between client generations: the SDK objects use
+  // `masterPasswordAuthenticationHash` / `masterKeyWrappedUserKey`, while older
+  // builds send `hash` / `key`. The reference implementation accepts both via
+  // serde aliases; accept both here too.
   masterPasswordAuthentication: z
-    .object({ kdf: kdfSchema, salt: z.string(), hash: z.string() })
+    .object({
+      kdf: kdfSchema,
+      salt: z.string(),
+      hash: z.string().optional(),
+      masterPasswordAuthenticationHash: z.string().optional(),
+    })
     .optional(),
-  masterPasswordUnlock: z.object({ kdf: kdfSchema, salt: z.string(), key: z.string() }).optional(),
+  masterPasswordUnlock: z
+    .object({
+      kdf: kdfSchema,
+      salt: z.string(),
+      key: z.string().optional(),
+      masterKeyWrappedUserKey: z.string().optional(),
+    })
+    .optional(),
   kdf: kdfSchema.optional(),
   key: z.string().optional(),
   masterPasswordHash: z.string().optional(),
@@ -127,9 +144,15 @@ export async function registerHandler(c: Context<AppEnv>): Promise<Response> {
       throw AppError.apiJson(422, { error: 'Unexpected RegisterData format' });
     }
 
+    const resolvedHash = current.hash ?? current.masterPasswordAuthenticationHash;
+    const resolvedKey = unlock.key ?? unlock.masterKeyWrappedUserKey;
+    if (resolvedHash === undefined || resolvedKey === undefined) {
+      throw AppError.apiJson(422, { error: 'Unexpected RegisterData format' });
+    }
+
     kdf = authKdf;
-    clientHash = current.hash;
-    userKey = unlock.key;
+    clientHash = resolvedHash;
+    userKey = resolvedKey;
   } else if (
     payload.kdf !== undefined &&
     payload.key !== undefined &&
