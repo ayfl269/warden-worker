@@ -127,7 +127,8 @@ describe('TOTP activation', () => {
 
   it('activates TOTP, stores the key and creates a recovery code', async () => {
     const key = generateTotpSecret();
-    const code = generateTotp(key, currentTotpTimeStep());
+    const step = currentTotpTimeStep();
+    const code = generateTotp(key, step);
 
     const response = await app.fetch(
       jsonRequest(
@@ -153,7 +154,10 @@ describe('TOTP activation', () => {
     };
     expect(row.atype).toBe(0);
     expect(row.data).toBe(key);
-    expect(row.last_used).toBe(currentTotpTimeStep());
+    // The handler stores the time step it validated against. The 30 s window can
+    // roll over between generating the code above and handling the request, so
+    // accept either the current step or the next one.
+    expect([step, step + 1]).toContain(row.last_used);
 
     const user = d1.raw.prepare('SELECT totp_recover FROM users').get() as {
       totp_recover: string | null;
