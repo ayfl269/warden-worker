@@ -1,7 +1,7 @@
 import pbkdf2Module from '../wasm/pbkdf2.wasm';
 import { makeApp } from './app';
-import { initPbkdf2Wasm } from './auth/pbkdf2Wasm';
 import { base64UrlNoPadToBytes } from './auth/base64';
+import { initPbkdf2Wasm } from './auth/pbkdf2Wasm';
 import { HeavyDo } from './durable/heavy';
 import { NotifyDo } from './durable/notify';
 import type { Env } from './env';

@@ -26,11 +26,7 @@ export function isUsingNativePbkdf2(): boolean {
   return useNativePbkdf2;
 }
 
-function deriveKey(
-  password: Uint8Array,
-  salt: Uint8Array,
-  iterations: number,
-): Uint8Array {
+function deriveKey(password: Uint8Array, salt: Uint8Array, iterations: number): Uint8Array {
   const fromWasm = pbkdf2Wasm(password, salt, iterations);
   if (fromWasm !== null) return fromWasm;
 

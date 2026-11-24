@@ -122,19 +122,23 @@ export async function createCipherHandler(c: Context<AppEnv>): Promise<Response>
   publishCipherUpdate(c.env, claims.sub, SYNC_CIPHER_CREATE, id, now, claims.device);
 
   return jsonResponse(
-    buildCipherResponse({
-      id,
-      user_id: claims.sub,
-      organization_id: null,
-      type: request.type,
-      data,
-      favorite: favorite ? 1 : 0,
-      folder_id: folderId,
-      deleted_at: null,
-      archived_at: null,
-      created_at: now,
-      updated_at: now,
-    }, null, 'cipher'),
+    buildCipherResponse(
+      {
+        id,
+        user_id: claims.sub,
+        organization_id: null,
+        type: request.type,
+        data,
+        favorite: favorite ? 1 : 0,
+        folder_id: folderId,
+        deleted_at: null,
+        archived_at: null,
+        created_at: now,
+        updated_at: now,
+      },
+      null,
+      'cipher',
+    ),
   );
 }
 
@@ -181,14 +185,18 @@ export async function updateCipherHandler(c: Context<AppEnv>): Promise<Response>
   publishCipherUpdate(c.env, claims.sub, SYNC_CIPHER_UPDATE, row.id, now, claims.device);
 
   return jsonResponse(
-    buildCipherResponse({
-      ...row,
-      type: request.type,
-      data,
-      folder_id: folderId,
-      favorite: favorite ? 1 : 0,
-      updated_at: now,
-    }, null, 'cipher'),
+    buildCipherResponse(
+      {
+        ...row,
+        type: request.type,
+        data,
+        folder_id: folderId,
+        favorite: favorite ? 1 : 0,
+        updated_at: now,
+      },
+      null,
+      'cipher',
+    ),
   );
 }
 

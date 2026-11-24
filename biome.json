@@ -1,7 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
   "files": {
-    "includes": ["worker/**/*.ts", "tests/**/*.ts", "tools/**/*.mjs", "vitest.config.ts"]
+    "includes": [
+      "src/**/*.ts",
+      "tests/**/*.ts",
+      "tools/**/*.mjs",
+      "vitest.config.ts",
+      "vitest.integration.config.ts"
+    ]
   },
   "formatter": {
     "indentStyle": "space",

@@ -21,7 +21,10 @@ class Statement {
     this.params = params;
   }
   bind(...values) {
-    return new Statement(this.sql, values.map((v) => (v === undefined ? null : v)));
+    return new Statement(
+      this.sql,
+      values.map((v) => (v === undefined ? null : v)),
+    );
   }
   async first() {
     return db.prepare(this.sql).get(...this.params) ?? null;
