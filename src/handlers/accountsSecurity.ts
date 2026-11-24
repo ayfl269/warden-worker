@@ -13,6 +13,7 @@ import {
 import { serverPasswordIterations } from '../env';
 import { AppError } from '../errors';
 import { readJson } from '../http/body';
+import { enforcePasswordVerifyLimit } from '../http/limits';
 import { jsonResponse } from '../http/rawJson';
 import type { UserRow } from '../models/user';
 import { publishUserLogout } from '../notifications/publish';
@@ -62,6 +63,7 @@ function assertPassword(user: UserRow, clientHash: string): void {
 export async function postPasswordHandler(c: Context<AppEnv>): Promise<Response> {
   const payload = await readJson(c.req.raw, passwordSchema);
   const user = await loadUser(c);
+  await enforcePasswordVerifyLimit(c.env, user.id);
   assertPassword(user, payload.masterPasswordHash);
 
   const salt = generateSalt();
@@ -102,6 +104,7 @@ export async function postSecurityStampHandler(c: Context<AppEnv>): Promise<Resp
   }
 
   const user = await loadUser(c);
+  await enforcePasswordVerifyLimit(c.env, user.id);
   assertPassword(user, payload.masterPasswordHash);
 
   const db = getDb(c.env);
@@ -125,6 +128,7 @@ export async function deleteAccountHandler(c: Context<AppEnv>): Promise<Response
   }
 
   const user = await loadUser(c);
+  await enforcePasswordVerifyLimit(c.env, user.id);
   assertPassword(user, payload.masterPasswordHash);
 
   const db = getDb(c.env);

@@ -7,6 +7,7 @@ import { getDb, nowString } from '../db/client';
 import { serverPasswordIterations } from '../env';
 import { AppError } from '../errors';
 import { readJson } from '../http/body';
+import { enforcePasswordVerifyLimit } from '../http/limits';
 import { jsonResponse } from '../http/rawJson';
 import {
   ensureSupportedKdf,
@@ -84,6 +85,7 @@ export async function postKdfHandler(c: Context<AppEnv>): Promise<Response> {
     .first<UserRow>();
   if (user === null) throw AppError.notFound('User not found');
 
+  await enforcePasswordVerifyLimit(c.env, user.id);
   assertMasterPassword(user, payload.masterPasswordHash);
 
   const authKdf = resolveKdf(payload.authenticationData.kdf);

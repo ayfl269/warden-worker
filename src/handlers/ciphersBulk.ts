@@ -6,6 +6,7 @@ import { getDb, nowString } from '../db/client';
 import { listAttachmentKeysForCiphers, listAttachmentKeysForUser } from '../db/storageKeys';
 import { AppError } from '../errors';
 import { readJson } from '../http/body';
+import { enforcePasswordVerifyLimit } from '../http/limits';
 import { jsonResponse } from '../http/rawJson';
 import { buildCipherResponse, type CipherRow, cipherListResponse } from '../models/cipherResponse';
 import type { UserRow } from '../models/user';
@@ -247,6 +248,7 @@ export async function purgeVaultHandler(c: Context<AppEnv>): Promise<Response> {
     .first<UserRow>();
   if (user === null) throw AppError.notFound('User not found');
 
+  await enforcePasswordVerifyLimit(c.env, user.id);
   assertMasterPassword(user, hash);
 
   const now = nowString();

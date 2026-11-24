@@ -7,6 +7,7 @@ import { executeInBatches, getDb, nowString } from '../db/client';
 import { getEnvUsize, serverPasswordIterations } from '../env';
 import { AppError } from '../errors';
 import { readJson } from '../http/body';
+import { enforcePasswordVerifyLimit } from '../http/limits';
 import { jsonResponse } from '../http/rawJson';
 import { buildCipherData, cipherRequestSchema, typeFieldsOf } from '../models/cipher';
 import {
@@ -55,6 +56,7 @@ export async function rotateUserKeysHandler(c: Context<AppEnv>): Promise<Respons
     .first<UserRow>();
   if (user === null) throw AppError.notFound('User not found');
 
+  await enforcePasswordVerifyLimit(c.env, user.id);
   assertMasterPassword(user, payload.oldMasterKeyAuthenticationHash);
 
   const unlock = payload.accountUnlockData.masterPasswordUnlockData;

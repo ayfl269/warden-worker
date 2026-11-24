@@ -12,6 +12,8 @@ let instance: WebAssembly.Instance | null = null;
 const PW_OFFSET = 0x10000;
 const SALT_OFFSET = 0x10100;
 const OUT_OFFSET = 0x10200;
+/** `SALT_OFFSET - PW_OFFSET`: the password buffer must not reach the salt. */
+const MAX_PASSWORD_BYTES = 256;
 const MAX_SALT_BYTES = 256;
 
 export function initPbkdf2Wasm(module: WebAssembly.Module): boolean {
@@ -42,6 +44,10 @@ export function pbkdf2Wasm(
   iterations: number,
 ): Uint8Array | null {
   if (instance === null) return null;
+  // The password and salt live in adjacent 256-byte scratch slots, so an
+  // over-long password would be overwritten by the salt (silently changing the
+  // effective password) or overflow the buffer entirely.
+  if (password.length > MAX_PASSWORD_BYTES) return null;
   if (salt.length > MAX_SALT_BYTES) return null;
 
   const exports = instance.exports as unknown as {
