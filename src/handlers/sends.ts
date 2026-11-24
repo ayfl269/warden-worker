@@ -538,6 +538,31 @@ export async function accessFileSendHandler(c: Context<AppEnv>): Promise<Respons
 
   validateSendAccess(row, nowString());
 
+  // A password-protected Send must not hand out a download token to anyone who
+  // knows the (recoverable) send id and the file id. Mirrors `access_file_send`
+  // in the reference implementation, which gates this endpoint exactly like
+  // `access_send`.
+  if (row.password_hash !== null) {
+    await enforceIpRateLimit(
+      c.env,
+      c.req.raw.headers,
+      'SEND_ACCESS_RATE_LIMITER',
+      'send-access',
+      'Too many send password attempts. Please try again later.',
+    );
+
+    const body = await readJson(c.req.raw, z.object({ password: z.string().nullish() })).catch(
+      () => ({ password: null }),
+    );
+    const password = body.password;
+    if (password === undefined || password === null || password.length === 0) {
+      throw AppError.unauthorized('Password not provided');
+    }
+    if (!verifySendPassword(row, password)) {
+      throw AppError.badRequest('Invalid password');
+    }
+  }
+
   await db
     .prepare('UPDATE sends SET access_count = access_count + 1, updated_at = ?1 WHERE id = ?2')
     .bind(nowString(), row.id)

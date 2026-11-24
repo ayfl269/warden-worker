@@ -160,6 +160,78 @@ describe('file sends', () => {
     expect(bucket.store.size).toBe(0);
   });
 
+  // Regression: this endpoint used to mint a download token without checking
+  // the Send password, so knowing the (recoverable) send id and the file id was
+  // enough to download a password-protected file.
+  it('requires the password to download a protected file send', async () => {
+    const bucket = new FakeR2Bucket();
+    env = { ...env, ATTACHMENTS_BUCKET: bucket } as unknown as Env;
+
+    const created = await app.fetch(
+      jsonRequest(
+        '/api/sends/file/v2',
+        {
+          type: 1,
+          name: '2.protected',
+          notes: null,
+          key: '2.key',
+          file: { fileName: 'f.bin' },
+          fileLength: 5,
+          maxAccessCount: null,
+          deletionDate: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+          expirationDate: null,
+          disabled: false,
+          hideEmail: false,
+          password: 'hunter2',
+        },
+        'POST',
+        token,
+      ),
+      env,
+      executionContext,
+    );
+    expect(created.status).toBe(200);
+
+    const body = (await created.json()) as {
+      url: string;
+      sendResponse: { id: string; file: { id: string } };
+    };
+    const sendId = body.sendResponse.id;
+    const fileId = body.sendResponse.file.id;
+
+    const uploadUrl = new URL(body.url);
+    const upload = await handleStreaming(
+      new Request(uploadUrl, { method: 'PUT', body: 'hello', headers: { 'content-length': '5' } }),
+      env,
+      uploadUrl,
+    );
+    expect(upload.status).toBe(201);
+
+    const accessPath = `/api/sends/${sendId}/access/file/${fileId}`;
+
+    const anonymous = await app.fetch(
+      new Request(`https://example.com${accessPath}`, { method: 'POST' }),
+      env,
+      executionContext,
+    );
+    expect(anonymous.status).toBe(401);
+
+    const wrong = await app.fetch(
+      jsonRequest(accessPath, { password: 'nope' }),
+      env,
+      executionContext,
+    );
+    expect(wrong.status).toBe(400);
+
+    const right = await app.fetch(
+      jsonRequest(accessPath, { password: 'hunter2' }),
+      env,
+      executionContext,
+    );
+    expect(right.status).toBe(200);
+    expect(((await right.json()) as { object: string }).object).toBe('send-fileDownload');
+  });
+
   it('rejects file sends without a storage backend', async () => {
     const response = await app.fetch(
       jsonRequest(
