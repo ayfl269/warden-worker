@@ -105,20 +105,22 @@ const PASSWORD = 'correct horse battery staple';
 const stamp = Date.now();
 const EMAIL_A = `sec-a-${stamp}@example.com`;
 const EMAIL_B = `sec-b-${stamp}@example.com`;
+const EMAIL_HINT = `sec-hint-${stamp}@example.com`;
+const HINT_TEXT = 'my password hint mentions hunter2';
 
 function clientHash(email) {
   const masterKey = pbkdf2Sync(PASSWORD, email.toLowerCase(), 600000, 32, 'sha256');
   return pbkdf2Sync(masterKey, PASSWORD, 1, 32, 'sha256').toString('base64');
 }
 
-async function register(email, hash) {
+async function register(email, hash, hint = null) {
   return call('/identity/accounts/register', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       email,
       name: email,
-      masterPasswordHint: null,
+      masterPasswordHint: hint,
       userAsymmetricKeys: { publicKey: 'cHVibGlj', encryptedPrivateKey: 'ZW5j' },
       kdf: { kdfType: 0, iterations: 600000 },
       masterPasswordHash: hash,
@@ -149,6 +151,8 @@ const hashA = clientHash(EMAIL_A);
 const hashB = clientHash(EMAIL_B);
 const deviceIdA = randomUUID();
 
+// Registered first: the register rate limit allows five attempts per minute.
+await register(EMAIL_HINT, clientHash(EMAIL_HINT), HINT_TEXT);
 await register(EMAIL_A, hashA);
 await register(EMAIL_B, hashB);
 
@@ -590,15 +594,49 @@ check(
   'missing headers -> 400',
 );
 
+const hintResponse = await call('/api/accounts/password-hint', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ email: EMAIL_HINT }),
+});
+check(
+  'password hint is not disclosed to anonymous callers',
+  !hintResponse.text.includes('hunter2'),
+  `${hintResponse.status} ${hintResponse.text.slice(0, 40)}`,
+);
+
 const tExisting = await login(EMAIL_B, hashB);
 const tMissing = await login(`nobody2-${stamp}@example.com`, 'x');
-// Existing users pay a real 600k PBKDF2 (~1.4s); unknown users only pay
-// LOGIN_MISSING_USER_DELAY_MS (default 550ms), so the gap is measurable.
+// Existing users pay a real 600k PBKDF2 (~1.4-1.8s); unknown users pay
+// LOGIN_MISSING_USER_DELAY_MS (default 1200ms) so the two should be close.
 warnIfNot(
   'login timing does not reveal account existence',
   Math.abs(tExisting.ms - tMissing.ms) < 900,
   `existing=${tExisting.ms}ms missing=${tMissing.ms}ms`,
 );
+
+// ---------------------------------------------------------------- L. device revocation
+console.log('\n--- L. per-device revocation ---');
+
+const deviceIdB = randomUUID();
+const loginB2 = await login(EMAIL_B, hashB, { deviceIdentifier: deviceIdB });
+const tokenB2 = loginB2.json?.access_token;
+
+if (typeof tokenB2 === 'string') {
+  const revoke = await call(`/api/devices/${deviceIdB}`, {
+    method: 'DELETE',
+    headers: { authorization: `Bearer ${tokenB2}` },
+  });
+  check('device revocation accepted', revoke.status === 200, `${revoke.status}`);
+
+  const revoked = await call('/api/accounts/profile', {
+    headers: { authorization: `Bearer ${tokenB2}` },
+  });
+  check('revoked device token is rejected', revoked.status === 401, `${revoked.status}`);
+
+  const survivor = await call('/api/accounts/profile', { headers: authB });
+  check('other sessions keep working', survivor.status === 200, `${survivor.status}`);
+}
 
 // ---------------------------------------------------------------- H. 2FA
 console.log('\n--- H. two-factor ---');
