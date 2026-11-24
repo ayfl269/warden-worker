@@ -1,0 +1,38 @@
+name: TypeScript CI
+
+on:
+  push:
+    branches: [main, uat, release*]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck, lint and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npx biome check .
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Bundle (dry run)
+        run: npx wrangler deploy --dry-run --outdir .wrangler/dry-run

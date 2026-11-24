@@ -1,0 +1,3341 @@
+{
+  "baseUrl": "https://bit.ayfl.top",
+  "capturedAt": "2026-11-24T08:40:37.339Z",
+  "note": "Captured from the Rust reference implementation. Volatile values are normalized.",
+  "cases": [
+    {
+      "name": "config",
+      "request": {
+        "method": "GET",
+        "path": "/api/config",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "communication": null,
+          "environment": {
+            "api": "https://bit.ayfl.top/api",
+            "cloudRegion": null,
+            "identity": "https://bit.ayfl.top/identity",
+            "notifications": "https://bit.ayfl.top/notifications",
+            "sso": "",
+            "vault": "https://bit.ayfl.top"
+          },
+          "featureStates": {
+            "cxp-export-mobile": true,
+            "cxp-import-mobile": true,
+            "pm-19051-send-email-verification": false,
+            "pm-19148-innovation-archive": true
+          },
+          "gitHash": "5d84f176",
+          "object": "config",
+          "push": {
+            "pushTechnology": 0,
+            "vapidPublicKey": null
+          },
+          "server": {
+            "name": "Vaultwarden",
+            "url": "https://github.com/dani-garcia/vaultwarden"
+          },
+          "settings": {
+            "disableUserRegistration": true,
+            "suppressOnboardingInterstitials": false
+          },
+          "version": "2026.6.0"
+        }
+      }
+    },
+    {
+      "name": "version",
+      "request": {
+        "method": "GET",
+        "path": "/api/version",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": "2026.6.0"
+      }
+    },
+    {
+      "name": "now",
+      "request": {
+        "method": "GET",
+        "path": "/api/now",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": "<ts>"
+      }
+    },
+    {
+      "name": "hibp",
+      "request": {
+        "method": "GET",
+        "path": "/api/hibp/breach",
+        "query": "?username=test",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": []
+      }
+    },
+    {
+      "name": "alive",
+      "request": {
+        "method": "GET",
+        "path": "/api/alive",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": "<ts>"
+      }
+    },
+    {
+      "name": "unknown-route",
+      "request": {
+        "method": "GET",
+        "path": "/api/does-not-exist",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 404,
+        "contentType": null,
+        "body": ""
+      }
+    },
+    {
+      "name": "wrong-method",
+      "request": {
+        "method": "POST",
+        "path": "/api/config",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 405,
+        "contentType": null,
+        "body": ""
+      }
+    },
+    {
+      "name": "prelogin-missing-user",
+      "request": {
+        "method": "POST",
+        "path": "/identity/accounts/prelogin",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "email": "<email>"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "kdf": 0,
+          "kdfIterations": 600000,
+          "kdfMemory": null,
+          "kdfParallelism": null,
+          "kdfSettings": {
+            "iterations": 600000,
+            "kdfType": 0,
+            "memory": null,
+            "parallelism": null
+          },
+          "salt": null
+        }
+      }
+    },
+    {
+      "name": "register-current",
+      "request": {
+        "method": "POST",
+        "path": "/identity/accounts/register",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "email": "<email>",
+          "name": "Golden",
+          "masterPasswordHint": null,
+          "userAsymmetricKeys": {
+            "publicKey": "golden-public-key",
+            "encryptedPrivateKey": "golden-encrypted-private-key"
+          },
+          "masterPasswordAuthentication": {
+            "kdf": {
+              "kdfType": 0,
+              "iterations": 600000
+            },
+            "salt": "<email>",
+            "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          },
+          "masterPasswordUnlock": {
+            "kdf": {
+              "kdfType": 0,
+              "iterations": 600000
+            },
+            "salt": "<email>",
+            "key": "golden-user-key"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {}
+      }
+    },
+    {
+      "name": "token-password",
+      "request": {
+        "method": "POST",
+        "path": "/identity/connect/token",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "grant_type": "password",
+          "username": "golden@ayfl.cn",
+          "password": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "scope": "api offline_access",
+          "client_id": "cli",
+          "deviceType": "9",
+          "deviceIdentifier": "golden-device",
+          "deviceName": "Golden Device"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "access_token": "<opaque>",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "refresh_token": "<opaque>",
+          "scope": "api offline_access",
+          "Key": "golden-user-key",
+          "PrivateKey": "golden-encrypted-private-key",
+          "Kdf": 0,
+          "KdfIterations": 600000,
+          "KdfMemory": null,
+          "KdfParallelism": null,
+          "ResetMasterPassword": false,
+          "ForcePasswordReset": false,
+          "UserDecryptionOptions": {
+            "HasMasterPassword": true,
+            "MasterPasswordUnlock": {
+              "Kdf": {
+                "Iterations": 600000,
+                "KdfType": 0,
+                "Memory": null,
+                "Parallelism": null
+              },
+              "MasterKeyEncryptedUserKey": "golden-user-key",
+              "MasterKeyWrappedUserKey": "golden-user-key",
+              "Salt": "<email>"
+            },
+            "Object": "userDecryptionOptions"
+          },
+          "AccountKeys": {
+            "Object": "privateKeys",
+            "publicKeyEncryptionKeyPair": {
+              "Object": "publicKeyEncryptionKeyPair",
+              "publicKey": "golden-public-key",
+              "wrappedPrivateKey": "golden-encrypted-private-key"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "sync-empty",
+      "request": {
+        "method": "GET",
+        "path": "/api/sync",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "profile": {
+            "name": "Golden",
+            "avatarColor": null,
+            "email": "<email>",
+            "id": "<uuid>",
+            "securityStamp": "<uuid>",
+            "object": "profile",
+            "premiumFromOrganization": false,
+            "culture": "en-US",
+            "forcePasswordReset": false,
+            "emailVerified": true,
+            "twoFactorEnabled": false,
+            "premium": true,
+            "usesKeyConnector": false,
+            "creationDate": "<ts>",
+            "privateKey": "golden-encrypted-private-key",
+            "key": "golden-user-key",
+            "accountKeys": {
+              "object": "privateKeys",
+              "publicKeyEncryptionKeyPair": {
+                "object": "publicKeyEncryptionKeyPair",
+                "publicKey": "golden-public-key",
+                "signedPublicKey": null,
+                "wrappedPrivateKey": "golden-encrypted-private-key"
+              },
+              "securityState": null,
+              "signatureKeyPair": null
+            },
+            "organizations": [],
+            "providers": [],
+            "providerOrganizations": [],
+            "_status": 0
+          },
+          "folders": [],
+          "collections": [],
+          "policies": [],
+          "ciphers": [],
+          "domains": {
+            "equivalentDomains": [],
+            "globalEquivalentDomains": [
+              {
+                "type": 2,
+                "domains": [
+                  "ameritrade.com",
+                  "tdameritrade.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 3,
+                "domains": [
+                  "bankofamerica.com",
+                  "bofa.com",
+                  "mbna.com",
+                  "usecfo.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 4,
+                "domains": [
+                  "sprint.com",
+                  "sprintpcs.com",
+                  "nextel.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 0,
+                "domains": [
+                  "youtube.com",
+                  "google.com",
+                  "gmail.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 1,
+                "domains": [
+                  "apple.com",
+                  "icloud.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 5,
+                "domains": [
+                  "wellsfargo.com",
+                  "wf.com",
+                  "wellsfargoadvisors.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 6,
+                "domains": [
+                  "mymerrill.com",
+                  "ml.com",
+                  "merrilledge.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 7,
+                "domains": [
+                  "accountonline.com",
+                  "citi.com",
+                  "citibank.com",
+                  "citicards.com",
+                  "citibankonline.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 8,
+                "domains": [
+                  "cnet.com",
+                  "cnettv.com",
+                  "com.com",
+                  "download.com",
+                  "news.com",
+                  "search.com",
+                  "upload.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 9,
+                "domains": [
+                  "bananarepublic.com",
+                  "gap.com",
+                  "oldnavy.com",
+                  "piperlime.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 10,
+                "domains": [
+                  "bing.com",
+                  "hotmail.com",
+                  "live.com",
+                  "microsoft.com",
+                  "msn.com",
+                  "passport.net",
+                  "windows.com",
+                  "microsoftonline.com",
+                  "office.com",
+                  "office365.com",
+                  "microsoftstore.com",
+                  "xbox.com",
+                  "azure.com",
+                  "windowsazure.com",
+                  "cloud.microsoft"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 11,
+                "domains": [
+                  "ua2go.com",
+                  "ual.com",
+                  "united.com",
+                  "unitedwifi.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 12,
+                "domains": [
+                  "overture.com",
+                  "yahoo.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 13,
+                "domains": [
+                  "zonealarm.com",
+                  "zonelabs.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 14,
+                "domains": [
+                  "paypal.com",
+                  "paypal-search.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 15,
+                "domains": [
+                  "avon.com",
+                  "youravon.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 16,
+                "domains": [
+                  "diapers.com",
+                  "soap.com",
+                  "wag.com",
+                  "yoyo.com",
+                  "beautybar.com",
+                  "casa.com",
+                  "afterschool.com",
+                  "vine.com",
+                  "bookworm.com",
+                  "look.com",
+                  "vinemarket.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 17,
+                "domains": [
+                  "1800contacts.com",
+                  "800contacts.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 18,
+                "domains": [
+                  "amazon.com",
+                  "amazon.com.be",
+                  "amazon.ae",
+                  "amazon.ca",
+                  "amazon.co.uk",
+                  "amazon.com.au",
+                  "amazon.com.br",
+                  "amazon.com.mx",
+                  "amazon.com.tr",
+                  "amazon.de",
+                  "amazon.es",
+                  "amazon.fr",
+                  "amazon.in",
+                  "amazon.it",
+                  "amazon.nl",
+                  "amazon.pl",
+                  "amazon.sa",
+                  "amazon.se",
+                  "amazon.sg"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 19,
+                "domains": [
+                  "cox.com",
+                  "cox.net",
+                  "coxbusiness.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 20,
+                "domains": [
+                  "mynortonaccount.com",
+                  "norton.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 21,
+                "domains": [
+                  "verizon.com",
+                  "verizon.net"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 22,
+                "domains": [
+                  "rakuten.com",
+                  "buy.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 23,
+                "domains": [
+                  "siriusxm.com",
+                  "sirius.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 24,
+                "domains": [
+                  "ea.com",
+                  "origin.com",
+                  "play4free.com",
+                  "tiberiumalliance.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 25,
+                "domains": [
+                  "37signals.com",
+                  "basecamp.com",
+                  "basecamphq.com",
+                  "highrisehq.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 26,
+                "domains": [
+                  "steampowered.com",
+                  "steamcommunity.com",
+                  "steamgames.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 27,
+                "domains": [
+                  "chart.io",
+                  "chartio.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 28,
+                "domains": [
+                  "gotomeeting.com",
+                  "citrixonline.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 29,
+                "domains": [
+                  "gogoair.com",
+                  "gogoinflight.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 30,
+                "domains": [
+                  "mysql.com",
+                  "oracle.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 31,
+                "domains": [
+                  "discover.com",
+                  "discovercard.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 32,
+                "domains": [
+                  "dcu.org",
+                  "dcu-online.org"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 33,
+                "domains": [
+                  "healthcare.gov",
+                  "cuidadodesalud.gov",
+                  "cms.gov"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 34,
+                "domains": [
+                  "pepco.com",
+                  "pepcoholdings.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 35,
+                "domains": [
+                  "century21.com",
+                  "21online.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 36,
+                "domains": [
+                  "comcast.com",
+                  "comcast.net",
+                  "xfinity.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 37,
+                "domains": [
+                  "cricketwireless.com",
+                  "aiowireless.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 38,
+                "domains": [
+                  "mandtbank.com",
+                  "mtb.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 39,
+                "domains": [
+                  "dropbox.com",
+                  "getdropbox.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 40,
+                "domains": [
+                  "snapfish.com",
+                  "snapfish.ca"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 41,
+                "domains": [
+                  "alibaba.com",
+                  "aliexpress.com",
+                  "aliyun.com",
+                  "net.cn"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 42,
+                "domains": [
+                  "playstation.com",
+                  "sonyentertainmentnetwork.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 43,
+                "domains": [
+                  "mercadolivre.com",
+                  "mercadolivre.com.br",
+                  "mercadolibre.com",
+                  "mercadolibre.com.ar",
+                  "mercadolibre.com.mx"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 44,
+                "domains": [
+                  "zendesk.com",
+                  "zopim.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 45,
+                "domains": [
+                  "autodesk.com",
+                  "tinkercad.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 46,
+                "domains": [
+                  "railnation.ru",
+                  "railnation.de",
+                  "rail-nation.com",
+                  "railnation.gr",
+                  "railnation.us",
+                  "trucknation.de",
+                  "traviangames.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 47,
+                "domains": [
+                  "wpcu.coop",
+                  "wpcuonline.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 48,
+                "domains": [
+                  "mathletics.com",
+                  "mathletics.com.au",
+                  "mathletics.co.uk"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 49,
+                "domains": [
+                  "discountbank.co.il",
+                  "telebank.co.il"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 50,
+                "domains": [
+                  "mi.com",
+                  "xiaomi.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 52,
+                "domains": [
+                  "postepay.it",
+                  "poste.it"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 51,
+                "domains": [
+                  "facebook.com",
+                  "messenger.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 53,
+                "domains": [
+                  "skysports.com",
+                  "skybet.com",
+                  "skyvegas.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 54,
+                "domains": [
+                  "disneymoviesanywhere.com",
+                  "go.com",
+                  "disney.com",
+                  "dadt.com",
+                  "disneyplus.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 55,
+                "domains": [
+                  "pokemon-gl.com",
+                  "pokemon.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 56,
+                "domains": [
+                  "myuv.com",
+                  "uvvu.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 58,
+                "domains": [
+                  "mdsol.com",
+                  "imedidata.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 57,
+                "domains": [
+                  "bank-yahav.co.il",
+                  "bankhapoalim.co.il"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 59,
+                "domains": [
+                  "sears.com",
+                  "shld.net"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 60,
+                "domains": [
+                  "xiami.com",
+                  "alipay.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 61,
+                "domains": [
+                  "belkin.com",
+                  "seedonk.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 62,
+                "domains": [
+                  "turbotax.com",
+                  "intuit.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 63,
+                "domains": [
+                  "shopify.com",
+                  "myshopify.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 64,
+                "domains": [
+                  "ebay.com",
+                  "ebay.at",
+                  "ebay.be",
+                  "ebay.ca",
+                  "ebay.ch",
+                  "ebay.cn",
+                  "ebay.co.jp",
+                  "ebay.co.th",
+                  "ebay.co.uk",
+                  "ebay.com.au",
+                  "ebay.com.hk",
+                  "ebay.com.my",
+                  "ebay.com.sg",
+                  "ebay.com.tw",
+                  "ebay.de",
+                  "ebay.es",
+                  "ebay.fr",
+                  "ebay.ie",
+                  "ebay.in",
+                  "ebay.it",
+                  "ebay.nl",
+                  "ebay.ph",
+                  "ebay.pl"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 65,
+                "domains": [
+                  "techdata.com",
+                  "techdata.ch"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 66,
+                "domains": [
+                  "schwab.com",
+                  "schwabplan.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 68,
+                "domains": [
+                  "tesla.com",
+                  "teslamotors.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 69,
+                "domains": [
+                  "morganstanley.com",
+                  "morganstanleyclientserv.com",
+                  "stockplanconnect.com",
+                  "ms.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 70,
+                "domains": [
+                  "taxact.com",
+                  "taxactonline.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 71,
+                "domains": [
+                  "mediawiki.org",
+                  "wikibooks.org",
+                  "wikidata.org",
+                  "wikimedia.org",
+                  "wikinews.org",
+                  "wikipedia.org",
+                  "wikiquote.org",
+                  "wikisource.org",
+                  "wikiversity.org",
+                  "wikivoyage.org",
+                  "wiktionary.org"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 72,
+                "domains": [
+                  "airbnb.at",
+                  "airbnb.be",
+                  "airbnb.ca",
+                  "airbnb.ch",
+                  "airbnb.cl",
+                  "airbnb.co.cr",
+                  "airbnb.co.id",
+                  "airbnb.co.in",
+                  "airbnb.co.kr",
+                  "airbnb.co.nz",
+                  "airbnb.co.uk",
+                  "airbnb.co.ve",
+                  "airbnb.com",
+                  "airbnb.com.ar",
+                  "airbnb.com.au",
+                  "airbnb.com.bo",
+                  "airbnb.com.br",
+                  "airbnb.com.bz",
+                  "airbnb.com.co",
+                  "airbnb.com.ec",
+                  "airbnb.com.gt",
+                  "airbnb.com.hk",
+                  "airbnb.com.hn",
+                  "airbnb.com.mt",
+                  "airbnb.com.my",
+                  "airbnb.com.ni",
+                  "airbnb.com.pa",
+                  "airbnb.com.pe",
+                  "airbnb.com.py",
+                  "airbnb.com.sg",
+                  "airbnb.com.sv",
+                  "airbnb.com.tr",
+                  "airbnb.com.tw",
+                  "airbnb.cz",
+                  "airbnb.de",
+                  "airbnb.dk",
+                  "airbnb.es",
+                  "airbnb.fi",
+                  "airbnb.fr",
+                  "airbnb.gr",
+                  "airbnb.gy",
+                  "airbnb.hu",
+                  "airbnb.ie",
+                  "airbnb.is",
+                  "airbnb.it",
+                  "airbnb.jp",
+                  "airbnb.mx",
+                  "airbnb.nl",
+                  "airbnb.no",
+                  "airbnb.pl",
+                  "airbnb.pt",
+                  "airbnb.ru",
+                  "airbnb.se"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 73,
+                "domains": [
+                  "eventbrite.at",
+                  "eventbrite.be",
+                  "eventbrite.ca",
+                  "eventbrite.ch",
+                  "eventbrite.cl",
+                  "eventbrite.co",
+                  "eventbrite.co.nz",
+                  "eventbrite.co.uk",
+                  "eventbrite.com",
+                  "eventbrite.com.ar",
+                  "eventbrite.com.au",
+                  "eventbrite.com.br",
+                  "eventbrite.com.mx",
+                  "eventbrite.com.pe",
+                  "eventbrite.de",
+                  "eventbrite.dk",
+                  "eventbrite.es",
+                  "eventbrite.fi",
+                  "eventbrite.fr",
+                  "eventbrite.hk",
+                  "eventbrite.ie",
+                  "eventbrite.it",
+                  "eventbrite.nl",
+                  "eventbrite.pt",
+                  "eventbrite.se",
+                  "eventbrite.sg"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 74,
+                "domains": [
+                  "stackexchange.com",
+                  "superuser.com",
+                  "stackoverflow.com",
+                  "serverfault.com",
+                  "mathoverflow.net",
+                  "askubuntu.com",
+                  "stackapps.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 75,
+                "domains": [
+                  "docusign.com",
+                  "docusign.net"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 76,
+                "domains": [
+                  "envato.com",
+                  "themeforest.net",
+                  "codecanyon.net",
+                  "videohive.net",
+                  "audiojungle.net",
+                  "graphicriver.net",
+                  "photodune.net",
+                  "3docean.net"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 77,
+                "domains": [
+                  "x10hosting.com",
+                  "x10premium.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 78,
+                "domains": [
+                  "dnsomatic.com",
+                  "opendns.com",
+                  "umbrella.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 79,
+                "domains": [
+                  "cagreatamerica.com",
+                  "canadaswonderland.com",
+                  "carowinds.com",
+                  "cedarfair.com",
+                  "cedarpoint.com",
+                  "dorneypark.com",
+                  "kingsdominion.com",
+                  "knotts.com",
+                  "miadventure.com",
+                  "schlitterbahn.com",
+                  "valleyfair.com",
+                  "visitkingsisland.com",
+                  "worldsoffun.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 80,
+                "domains": [
+                  "ubnt.com",
+                  "ui.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 81,
+                "domains": [
+                  "discordapp.com",
+                  "discord.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 82,
+                "domains": [
+                  "netcup.de",
+                  "netcup.eu",
+                  "customercontrolpanel.de"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 83,
+                "domains": [
+                  "yandex.com",
+                  "ya.ru",
+                  "yandex.az",
+                  "yandex.by",
+                  "yandex.co.il",
+                  "yandex.com.am",
+                  "yandex.com.ge",
+                  "yandex.com.tr",
+                  "yandex.ee",
+                  "yandex.fi",
+                  "yandex.fr",
+                  "yandex.kg",
+                  "yandex.kz",
+                  "yandex.lt",
+                  "yandex.lv",
+                  "yandex.md",
+                  "yandex.pl",
+                  "yandex.ru",
+                  "yandex.tj",
+                  "yandex.tm",
+                  "yandex.ua",
+                  "yandex.uz"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 84,
+                "domains": [
+                  "sonyentertainmentnetwork.com",
+                  "sony.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 85,
+                "domains": [
+                  "proton.me",
+                  "protonmail.com",
+                  "protonvpn.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 86,
+                "domains": [
+                  "ubisoft.com",
+                  "ubi.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 87,
+                "domains": [
+                  "transferwise.com",
+                  "wise.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 88,
+                "domains": [
+                  "takeaway.com",
+                  "just-eat.dk",
+                  "just-eat.no",
+                  "just-eat.fr",
+                  "just-eat.ch",
+                  "lieferando.de",
+                  "lieferando.at",
+                  "thuisbezorgd.nl",
+                  "pyszne.pl"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 89,
+                "domains": [
+                  "atlassian.com",
+                  "bitbucket.org",
+                  "trello.com",
+                  "statuspage.io",
+                  "atlassian.net",
+                  "jira.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 90,
+                "domains": [
+                  "pinterest.com",
+                  "pinterest.com.au",
+                  "pinterest.cl",
+                  "pinterest.de",
+                  "pinterest.dk",
+                  "pinterest.es",
+                  "pinterest.fr",
+                  "pinterest.co.uk",
+                  "pinterest.jp",
+                  "pinterest.co.kr",
+                  "pinterest.nz",
+                  "pinterest.pt",
+                  "pinterest.se"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 91,
+                "domains": [
+                  "twitter.com",
+                  "x.com"
+                ],
+                "excluded": false
+              }
+            ],
+            "object": "domains"
+          },
+          "sends": [],
+          "userDecryption": {
+            "masterPasswordUnlock": {
+              "kdf": {
+                "iterations": 600000,
+                "kdfType": 0,
+                "memory": null,
+                "parallelism": null
+              },
+              "masterKeyEncryptedUserKey": "golden-user-key",
+              "masterKeyWrappedUserKey": "golden-user-key",
+              "salt": "<email>"
+            }
+          },
+          "object": "sync"
+        }
+      }
+    },
+    {
+      "name": "profile",
+      "request": {
+        "method": "GET",
+        "path": "/api/accounts/profile",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "name": "Golden",
+          "avatarColor": null,
+          "email": "<email>",
+          "id": "<uuid>",
+          "securityStamp": "<uuid>",
+          "object": "profile",
+          "premiumFromOrganization": false,
+          "culture": "en-US",
+          "forcePasswordReset": false,
+          "emailVerified": true,
+          "twoFactorEnabled": false,
+          "premium": true,
+          "usesKeyConnector": false,
+          "creationDate": "<ts>",
+          "privateKey": "golden-encrypted-private-key",
+          "key": "golden-user-key",
+          "accountKeys": {
+            "object": "privateKeys",
+            "publicKeyEncryptionKeyPair": {
+              "object": "publicKeyEncryptionKeyPair",
+              "publicKey": "golden-public-key",
+              "signedPublicKey": null,
+              "wrappedPrivateKey": "golden-encrypted-private-key"
+            },
+            "securityState": null,
+            "signatureKeyPair": null
+          },
+          "organizations": [],
+          "providers": [],
+          "providerOrganizations": [],
+          "_status": 0
+        }
+      }
+    },
+    {
+      "name": "revision-date",
+      "request": {
+        "method": "GET",
+        "path": "/api/accounts/revision-date",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": 1795509620687
+      }
+    },
+    {
+      "name": "two-factor-list",
+      "request": {
+        "method": "GET",
+        "path": "/api/two-factor",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "continuationToken": null,
+          "data": [],
+          "object": "list"
+        }
+      }
+    },
+    {
+      "name": "folder-create",
+      "request": {
+        "method": "POST",
+        "path": "/api/folders",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "name": "2.golden-folder-name"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "id": "<uuid>",
+          "name": "2.golden-folder-name",
+          "revisionDate": "<ts>",
+          "object": "folder"
+        }
+      }
+    },
+    {
+      "name": "folder-list",
+      "request": {
+        "method": "GET",
+        "path": "/api/folders",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "continuationToken": null,
+          "data": [
+            {
+              "id": "<uuid>",
+              "name": "2.golden-folder-name",
+              "object": "folder",
+              "revisionDate": "<ts>"
+            }
+          ],
+          "object": "list"
+        }
+      }
+    },
+    {
+      "name": "folder-get",
+      "request": {
+        "method": "GET",
+        "path": "/api/folders/f29f3362-e389-4fa3-bcc9-0307a03db3a5",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "id": "<uuid>",
+          "name": "2.golden-folder-name",
+          "revisionDate": "<ts>",
+          "object": "folder"
+        }
+      }
+    },
+    {
+      "name": "cipher-create",
+      "request": {
+        "method": "POST",
+        "path": "/api/ciphers",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "type": 2,
+          "name": "2.golden-note",
+          "notes": null,
+          "folderId": "<uuid>",
+          "favorite": false,
+          "secureNote": {
+            "type": 0
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "archivedDate": null,
+          "attachments": null,
+          "bankAccount": null,
+          "card": null,
+          "collectionIds": [],
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "driversLicense": null,
+          "edit": true,
+          "favorite": false,
+          "fields": [],
+          "folderId": "<uuid>",
+          "id": "<uuid>",
+          "identity": null,
+          "key": null,
+          "login": null,
+          "name": "2.golden-note",
+          "notes": null,
+          "object": "cipher",
+          "organizationId": null,
+          "organizationUseTotp": false,
+          "passport": null,
+          "passwordHistory": [],
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "reprompt": 0,
+          "revisionDate": "<ts>",
+          "secureNote": {
+            "type": 0
+          },
+          "sshKey": null,
+          "type": 2,
+          "userId": "<uuid>",
+          "viewPassword": true
+        }
+      }
+    },
+    {
+      "name": "cipher-list",
+      "request": {
+        "method": "GET",
+        "path": "/api/ciphers",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "data": [
+            {
+              "object": "cipherDetails",
+              "id": "<uuid>",
+              "userId": "<uuid>",
+              "organizationId": null,
+              "folderId": "<uuid>",
+              "type": 2,
+              "favorite": false,
+              "edit": true,
+              "viewPassword": true,
+              "permissions": {
+                "delete": true,
+                "restore": true
+              },
+              "organizationUseTotp": false,
+              "collectionIds": [],
+              "revisionDate": "<ts>",
+              "creationDate": "<ts>",
+              "deletedDate": null,
+              "archivedDate": null,
+              "attachments": null,
+              "name": "2.golden-note",
+              "notes": null,
+              "fields": [],
+              "passwordHistory": [],
+              "reprompt": 0,
+              "login": null,
+              "secureNote": {
+                "type": 0
+              },
+              "card": null,
+              "identity": null,
+              "sshKey": null,
+              "bankAccount": null,
+              "driversLicense": null,
+              "passport": null,
+              "key": null
+            }
+          ],
+          "object": "list",
+          "continuationToken": null
+        }
+      }
+    },
+    {
+      "name": "cipher-get",
+      "request": {
+        "method": "GET",
+        "path": "/api/ciphers/cc42dbbf-3ef5-4074-956b-ab22914085cf",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "archivedDate": null,
+          "attachments": null,
+          "bankAccount": null,
+          "card": null,
+          "collectionIds": [],
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "driversLicense": null,
+          "edit": true,
+          "favorite": false,
+          "fields": [],
+          "folderId": "<uuid>",
+          "id": "<uuid>",
+          "identity": null,
+          "key": null,
+          "login": null,
+          "name": "2.golden-note",
+          "notes": null,
+          "object": "cipherDetails",
+          "organizationId": null,
+          "organizationUseTotp": false,
+          "passport": null,
+          "passwordHistory": [],
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "reprompt": 0,
+          "revisionDate": "<ts>",
+          "secureNote": {
+            "type": 0
+          },
+          "sshKey": null,
+          "type": 2,
+          "userId": "<uuid>",
+          "viewPassword": true
+        }
+      }
+    },
+    {
+      "name": "cipher-partial-favorite",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/cc42dbbf-3ef5-4074-956b-ab22914085cf/partial",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "favorite": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "archivedDate": null,
+          "attachments": null,
+          "bankAccount": null,
+          "card": null,
+          "collectionIds": [],
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "driversLicense": null,
+          "edit": true,
+          "favorite": true,
+          "fields": [],
+          "folderId": null,
+          "id": "<uuid>",
+          "identity": null,
+          "key": null,
+          "login": null,
+          "name": "2.golden-note",
+          "notes": null,
+          "object": "cipherDetails",
+          "organizationId": null,
+          "organizationUseTotp": false,
+          "passport": null,
+          "passwordHistory": [],
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "reprompt": 0,
+          "revisionDate": "<ts>",
+          "secureNote": {
+            "type": 0
+          },
+          "sshKey": null,
+          "type": 2,
+          "userId": "<uuid>",
+          "viewPassword": true
+        }
+      }
+    },
+    {
+      "name": "cipher-update",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/cc42dbbf-3ef5-4074-956b-ab22914085cf",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "type": 2,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "folderId": "<uuid>",
+          "favorite": true,
+          "secureNote": {
+            "type": 0
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "archivedDate": null,
+          "attachments": null,
+          "bankAccount": null,
+          "card": null,
+          "collectionIds": [],
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "driversLicense": null,
+          "edit": true,
+          "favorite": true,
+          "fields": [],
+          "folderId": "<uuid>",
+          "id": "<uuid>",
+          "identity": null,
+          "key": null,
+          "login": null,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "object": "cipher",
+          "organizationId": null,
+          "organizationUseTotp": false,
+          "passport": null,
+          "passwordHistory": [],
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "reprompt": 0,
+          "revisionDate": "<ts>",
+          "secureNote": {
+            "type": 0
+          },
+          "sshKey": null,
+          "type": 2,
+          "userId": "<uuid>",
+          "viewPassword": true
+        }
+      }
+    },
+    {
+      "name": "sync-with-cipher",
+      "request": {
+        "method": "GET",
+        "path": "/api/sync",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "profile": {
+            "name": "Golden",
+            "avatarColor": null,
+            "email": "<email>",
+            "id": "<uuid>",
+            "securityStamp": "<uuid>",
+            "object": "profile",
+            "premiumFromOrganization": false,
+            "culture": "en-US",
+            "forcePasswordReset": false,
+            "emailVerified": true,
+            "twoFactorEnabled": false,
+            "premium": true,
+            "usesKeyConnector": false,
+            "creationDate": "<ts>",
+            "privateKey": "golden-encrypted-private-key",
+            "key": "golden-user-key",
+            "accountKeys": {
+              "object": "privateKeys",
+              "publicKeyEncryptionKeyPair": {
+                "object": "publicKeyEncryptionKeyPair",
+                "publicKey": "golden-public-key",
+                "signedPublicKey": null,
+                "wrappedPrivateKey": "golden-encrypted-private-key"
+              },
+              "securityState": null,
+              "signatureKeyPair": null
+            },
+            "organizations": [],
+            "providers": [],
+            "providerOrganizations": [],
+            "_status": 0
+          },
+          "folders": [
+            {
+              "id": "<uuid>",
+              "name": "2.golden-folder-name",
+              "revisionDate": "<ts>",
+              "object": "folder"
+            }
+          ],
+          "collections": [],
+          "policies": [],
+          "ciphers": [
+            {
+              "object": "cipherDetails",
+              "id": "<uuid>",
+              "userId": "<uuid>",
+              "organizationId": null,
+              "folderId": "<uuid>",
+              "type": 2,
+              "favorite": true,
+              "edit": true,
+              "viewPassword": true,
+              "permissions": {
+                "delete": true,
+                "restore": true
+              },
+              "organizationUseTotp": false,
+              "collectionIds": [],
+              "revisionDate": "<ts>",
+              "creationDate": "<ts>",
+              "deletedDate": null,
+              "archivedDate": null,
+              "attachments": null,
+              "name": "2.golden-note-updated",
+              "notes": "2.notes",
+              "fields": [],
+              "passwordHistory": [],
+              "reprompt": 0,
+              "login": null,
+              "secureNote": {
+                "type": 0
+              },
+              "card": null,
+              "identity": null,
+              "sshKey": null,
+              "bankAccount": null,
+              "driversLicense": null,
+              "passport": null,
+              "key": null
+            }
+          ],
+          "domains": {
+            "equivalentDomains": [],
+            "globalEquivalentDomains": [
+              {
+                "type": 2,
+                "domains": [
+                  "ameritrade.com",
+                  "tdameritrade.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 3,
+                "domains": [
+                  "bankofamerica.com",
+                  "bofa.com",
+                  "mbna.com",
+                  "usecfo.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 4,
+                "domains": [
+                  "sprint.com",
+                  "sprintpcs.com",
+                  "nextel.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 0,
+                "domains": [
+                  "youtube.com",
+                  "google.com",
+                  "gmail.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 1,
+                "domains": [
+                  "apple.com",
+                  "icloud.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 5,
+                "domains": [
+                  "wellsfargo.com",
+                  "wf.com",
+                  "wellsfargoadvisors.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 6,
+                "domains": [
+                  "mymerrill.com",
+                  "ml.com",
+                  "merrilledge.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 7,
+                "domains": [
+                  "accountonline.com",
+                  "citi.com",
+                  "citibank.com",
+                  "citicards.com",
+                  "citibankonline.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 8,
+                "domains": [
+                  "cnet.com",
+                  "cnettv.com",
+                  "com.com",
+                  "download.com",
+                  "news.com",
+                  "search.com",
+                  "upload.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 9,
+                "domains": [
+                  "bananarepublic.com",
+                  "gap.com",
+                  "oldnavy.com",
+                  "piperlime.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 10,
+                "domains": [
+                  "bing.com",
+                  "hotmail.com",
+                  "live.com",
+                  "microsoft.com",
+                  "msn.com",
+                  "passport.net",
+                  "windows.com",
+                  "microsoftonline.com",
+                  "office.com",
+                  "office365.com",
+                  "microsoftstore.com",
+                  "xbox.com",
+                  "azure.com",
+                  "windowsazure.com",
+                  "cloud.microsoft"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 11,
+                "domains": [
+                  "ua2go.com",
+                  "ual.com",
+                  "united.com",
+                  "unitedwifi.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 12,
+                "domains": [
+                  "overture.com",
+                  "yahoo.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 13,
+                "domains": [
+                  "zonealarm.com",
+                  "zonelabs.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 14,
+                "domains": [
+                  "paypal.com",
+                  "paypal-search.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 15,
+                "domains": [
+                  "avon.com",
+                  "youravon.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 16,
+                "domains": [
+                  "diapers.com",
+                  "soap.com",
+                  "wag.com",
+                  "yoyo.com",
+                  "beautybar.com",
+                  "casa.com",
+                  "afterschool.com",
+                  "vine.com",
+                  "bookworm.com",
+                  "look.com",
+                  "vinemarket.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 17,
+                "domains": [
+                  "1800contacts.com",
+                  "800contacts.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 18,
+                "domains": [
+                  "amazon.com",
+                  "amazon.com.be",
+                  "amazon.ae",
+                  "amazon.ca",
+                  "amazon.co.uk",
+                  "amazon.com.au",
+                  "amazon.com.br",
+                  "amazon.com.mx",
+                  "amazon.com.tr",
+                  "amazon.de",
+                  "amazon.es",
+                  "amazon.fr",
+                  "amazon.in",
+                  "amazon.it",
+                  "amazon.nl",
+                  "amazon.pl",
+                  "amazon.sa",
+                  "amazon.se",
+                  "amazon.sg"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 19,
+                "domains": [
+                  "cox.com",
+                  "cox.net",
+                  "coxbusiness.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 20,
+                "domains": [
+                  "mynortonaccount.com",
+                  "norton.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 21,
+                "domains": [
+                  "verizon.com",
+                  "verizon.net"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 22,
+                "domains": [
+                  "rakuten.com",
+                  "buy.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 23,
+                "domains": [
+                  "siriusxm.com",
+                  "sirius.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 24,
+                "domains": [
+                  "ea.com",
+                  "origin.com",
+                  "play4free.com",
+                  "tiberiumalliance.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 25,
+                "domains": [
+                  "37signals.com",
+                  "basecamp.com",
+                  "basecamphq.com",
+                  "highrisehq.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 26,
+                "domains": [
+                  "steampowered.com",
+                  "steamcommunity.com",
+                  "steamgames.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 27,
+                "domains": [
+                  "chart.io",
+                  "chartio.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 28,
+                "domains": [
+                  "gotomeeting.com",
+                  "citrixonline.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 29,
+                "domains": [
+                  "gogoair.com",
+                  "gogoinflight.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 30,
+                "domains": [
+                  "mysql.com",
+                  "oracle.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 31,
+                "domains": [
+                  "discover.com",
+                  "discovercard.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 32,
+                "domains": [
+                  "dcu.org",
+                  "dcu-online.org"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 33,
+                "domains": [
+                  "healthcare.gov",
+                  "cuidadodesalud.gov",
+                  "cms.gov"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 34,
+                "domains": [
+                  "pepco.com",
+                  "pepcoholdings.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 35,
+                "domains": [
+                  "century21.com",
+                  "21online.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 36,
+                "domains": [
+                  "comcast.com",
+                  "comcast.net",
+                  "xfinity.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 37,
+                "domains": [
+                  "cricketwireless.com",
+                  "aiowireless.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 38,
+                "domains": [
+                  "mandtbank.com",
+                  "mtb.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 39,
+                "domains": [
+                  "dropbox.com",
+                  "getdropbox.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 40,
+                "domains": [
+                  "snapfish.com",
+                  "snapfish.ca"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 41,
+                "domains": [
+                  "alibaba.com",
+                  "aliexpress.com",
+                  "aliyun.com",
+                  "net.cn"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 42,
+                "domains": [
+                  "playstation.com",
+                  "sonyentertainmentnetwork.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 43,
+                "domains": [
+                  "mercadolivre.com",
+                  "mercadolivre.com.br",
+                  "mercadolibre.com",
+                  "mercadolibre.com.ar",
+                  "mercadolibre.com.mx"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 44,
+                "domains": [
+                  "zendesk.com",
+                  "zopim.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 45,
+                "domains": [
+                  "autodesk.com",
+                  "tinkercad.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 46,
+                "domains": [
+                  "railnation.ru",
+                  "railnation.de",
+                  "rail-nation.com",
+                  "railnation.gr",
+                  "railnation.us",
+                  "trucknation.de",
+                  "traviangames.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 47,
+                "domains": [
+                  "wpcu.coop",
+                  "wpcuonline.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 48,
+                "domains": [
+                  "mathletics.com",
+                  "mathletics.com.au",
+                  "mathletics.co.uk"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 49,
+                "domains": [
+                  "discountbank.co.il",
+                  "telebank.co.il"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 50,
+                "domains": [
+                  "mi.com",
+                  "xiaomi.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 52,
+                "domains": [
+                  "postepay.it",
+                  "poste.it"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 51,
+                "domains": [
+                  "facebook.com",
+                  "messenger.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 53,
+                "domains": [
+                  "skysports.com",
+                  "skybet.com",
+                  "skyvegas.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 54,
+                "domains": [
+                  "disneymoviesanywhere.com",
+                  "go.com",
+                  "disney.com",
+                  "dadt.com",
+                  "disneyplus.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 55,
+                "domains": [
+                  "pokemon-gl.com",
+                  "pokemon.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 56,
+                "domains": [
+                  "myuv.com",
+                  "uvvu.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 58,
+                "domains": [
+                  "mdsol.com",
+                  "imedidata.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 57,
+                "domains": [
+                  "bank-yahav.co.il",
+                  "bankhapoalim.co.il"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 59,
+                "domains": [
+                  "sears.com",
+                  "shld.net"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 60,
+                "domains": [
+                  "xiami.com",
+                  "alipay.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 61,
+                "domains": [
+                  "belkin.com",
+                  "seedonk.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 62,
+                "domains": [
+                  "turbotax.com",
+                  "intuit.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 63,
+                "domains": [
+                  "shopify.com",
+                  "myshopify.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 64,
+                "domains": [
+                  "ebay.com",
+                  "ebay.at",
+                  "ebay.be",
+                  "ebay.ca",
+                  "ebay.ch",
+                  "ebay.cn",
+                  "ebay.co.jp",
+                  "ebay.co.th",
+                  "ebay.co.uk",
+                  "ebay.com.au",
+                  "ebay.com.hk",
+                  "ebay.com.my",
+                  "ebay.com.sg",
+                  "ebay.com.tw",
+                  "ebay.de",
+                  "ebay.es",
+                  "ebay.fr",
+                  "ebay.ie",
+                  "ebay.in",
+                  "ebay.it",
+                  "ebay.nl",
+                  "ebay.ph",
+                  "ebay.pl"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 65,
+                "domains": [
+                  "techdata.com",
+                  "techdata.ch"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 66,
+                "domains": [
+                  "schwab.com",
+                  "schwabplan.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 68,
+                "domains": [
+                  "tesla.com",
+                  "teslamotors.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 69,
+                "domains": [
+                  "morganstanley.com",
+                  "morganstanleyclientserv.com",
+                  "stockplanconnect.com",
+                  "ms.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 70,
+                "domains": [
+                  "taxact.com",
+                  "taxactonline.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 71,
+                "domains": [
+                  "mediawiki.org",
+                  "wikibooks.org",
+                  "wikidata.org",
+                  "wikimedia.org",
+                  "wikinews.org",
+                  "wikipedia.org",
+                  "wikiquote.org",
+                  "wikisource.org",
+                  "wikiversity.org",
+                  "wikivoyage.org",
+                  "wiktionary.org"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 72,
+                "domains": [
+                  "airbnb.at",
+                  "airbnb.be",
+                  "airbnb.ca",
+                  "airbnb.ch",
+                  "airbnb.cl",
+                  "airbnb.co.cr",
+                  "airbnb.co.id",
+                  "airbnb.co.in",
+                  "airbnb.co.kr",
+                  "airbnb.co.nz",
+                  "airbnb.co.uk",
+                  "airbnb.co.ve",
+                  "airbnb.com",
+                  "airbnb.com.ar",
+                  "airbnb.com.au",
+                  "airbnb.com.bo",
+                  "airbnb.com.br",
+                  "airbnb.com.bz",
+                  "airbnb.com.co",
+                  "airbnb.com.ec",
+                  "airbnb.com.gt",
+                  "airbnb.com.hk",
+                  "airbnb.com.hn",
+                  "airbnb.com.mt",
+                  "airbnb.com.my",
+                  "airbnb.com.ni",
+                  "airbnb.com.pa",
+                  "airbnb.com.pe",
+                  "airbnb.com.py",
+                  "airbnb.com.sg",
+                  "airbnb.com.sv",
+                  "airbnb.com.tr",
+                  "airbnb.com.tw",
+                  "airbnb.cz",
+                  "airbnb.de",
+                  "airbnb.dk",
+                  "airbnb.es",
+                  "airbnb.fi",
+                  "airbnb.fr",
+                  "airbnb.gr",
+                  "airbnb.gy",
+                  "airbnb.hu",
+                  "airbnb.ie",
+                  "airbnb.is",
+                  "airbnb.it",
+                  "airbnb.jp",
+                  "airbnb.mx",
+                  "airbnb.nl",
+                  "airbnb.no",
+                  "airbnb.pl",
+                  "airbnb.pt",
+                  "airbnb.ru",
+                  "airbnb.se"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 73,
+                "domains": [
+                  "eventbrite.at",
+                  "eventbrite.be",
+                  "eventbrite.ca",
+                  "eventbrite.ch",
+                  "eventbrite.cl",
+                  "eventbrite.co",
+                  "eventbrite.co.nz",
+                  "eventbrite.co.uk",
+                  "eventbrite.com",
+                  "eventbrite.com.ar",
+                  "eventbrite.com.au",
+                  "eventbrite.com.br",
+                  "eventbrite.com.mx",
+                  "eventbrite.com.pe",
+                  "eventbrite.de",
+                  "eventbrite.dk",
+                  "eventbrite.es",
+                  "eventbrite.fi",
+                  "eventbrite.fr",
+                  "eventbrite.hk",
+                  "eventbrite.ie",
+                  "eventbrite.it",
+                  "eventbrite.nl",
+                  "eventbrite.pt",
+                  "eventbrite.se",
+                  "eventbrite.sg"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 74,
+                "domains": [
+                  "stackexchange.com",
+                  "superuser.com",
+                  "stackoverflow.com",
+                  "serverfault.com",
+                  "mathoverflow.net",
+                  "askubuntu.com",
+                  "stackapps.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 75,
+                "domains": [
+                  "docusign.com",
+                  "docusign.net"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 76,
+                "domains": [
+                  "envato.com",
+                  "themeforest.net",
+                  "codecanyon.net",
+                  "videohive.net",
+                  "audiojungle.net",
+                  "graphicriver.net",
+                  "photodune.net",
+                  "3docean.net"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 77,
+                "domains": [
+                  "x10hosting.com",
+                  "x10premium.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 78,
+                "domains": [
+                  "dnsomatic.com",
+                  "opendns.com",
+                  "umbrella.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 79,
+                "domains": [
+                  "cagreatamerica.com",
+                  "canadaswonderland.com",
+                  "carowinds.com",
+                  "cedarfair.com",
+                  "cedarpoint.com",
+                  "dorneypark.com",
+                  "kingsdominion.com",
+                  "knotts.com",
+                  "miadventure.com",
+                  "schlitterbahn.com",
+                  "valleyfair.com",
+                  "visitkingsisland.com",
+                  "worldsoffun.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 80,
+                "domains": [
+                  "ubnt.com",
+                  "ui.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 81,
+                "domains": [
+                  "discordapp.com",
+                  "discord.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 82,
+                "domains": [
+                  "netcup.de",
+                  "netcup.eu",
+                  "customercontrolpanel.de"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 83,
+                "domains": [
+                  "yandex.com",
+                  "ya.ru",
+                  "yandex.az",
+                  "yandex.by",
+                  "yandex.co.il",
+                  "yandex.com.am",
+                  "yandex.com.ge",
+                  "yandex.com.tr",
+                  "yandex.ee",
+                  "yandex.fi",
+                  "yandex.fr",
+                  "yandex.kg",
+                  "yandex.kz",
+                  "yandex.lt",
+                  "yandex.lv",
+                  "yandex.md",
+                  "yandex.pl",
+                  "yandex.ru",
+                  "yandex.tj",
+                  "yandex.tm",
+                  "yandex.ua",
+                  "yandex.uz"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 84,
+                "domains": [
+                  "sonyentertainmentnetwork.com",
+                  "sony.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 85,
+                "domains": [
+                  "proton.me",
+                  "protonmail.com",
+                  "protonvpn.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 86,
+                "domains": [
+                  "ubisoft.com",
+                  "ubi.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 87,
+                "domains": [
+                  "transferwise.com",
+                  "wise.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 88,
+                "domains": [
+                  "takeaway.com",
+                  "just-eat.dk",
+                  "just-eat.no",
+                  "just-eat.fr",
+                  "just-eat.ch",
+                  "lieferando.de",
+                  "lieferando.at",
+                  "thuisbezorgd.nl",
+                  "pyszne.pl"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 89,
+                "domains": [
+                  "atlassian.com",
+                  "bitbucket.org",
+                  "trello.com",
+                  "statuspage.io",
+                  "atlassian.net",
+                  "jira.com"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 90,
+                "domains": [
+                  "pinterest.com",
+                  "pinterest.com.au",
+                  "pinterest.cl",
+                  "pinterest.de",
+                  "pinterest.dk",
+                  "pinterest.es",
+                  "pinterest.fr",
+                  "pinterest.co.uk",
+                  "pinterest.jp",
+                  "pinterest.co.kr",
+                  "pinterest.nz",
+                  "pinterest.pt",
+                  "pinterest.se"
+                ],
+                "excluded": false
+              },
+              {
+                "type": 91,
+                "domains": [
+                  "twitter.com",
+                  "x.com"
+                ],
+                "excluded": false
+              }
+            ],
+            "object": "domains"
+          },
+          "sends": [],
+          "userDecryption": {
+            "masterPasswordUnlock": {
+              "kdf": {
+                "iterations": 600000,
+                "kdfType": 0,
+                "memory": null,
+                "parallelism": null
+              },
+              "masterKeyEncryptedUserKey": "golden-user-key",
+              "masterKeyWrappedUserKey": "golden-user-key",
+              "salt": "<email>"
+            }
+          },
+          "object": "sync"
+        }
+      }
+    },
+    {
+      "name": "cipher-soft-delete",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/cc42dbbf-3ef5-4074-956b-ab22914085cf/delete",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": null
+      }
+    },
+    {
+      "name": "cipher-restore",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/cc42dbbf-3ef5-4074-956b-ab22914085cf/restore",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "archivedDate": null,
+          "attachments": null,
+          "bankAccount": null,
+          "card": null,
+          "collectionIds": [],
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "driversLicense": null,
+          "edit": true,
+          "favorite": true,
+          "fields": [],
+          "folderId": "<uuid>",
+          "id": "<uuid>",
+          "identity": null,
+          "key": null,
+          "login": null,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "object": "cipherDetails",
+          "organizationId": null,
+          "organizationUseTotp": false,
+          "passport": null,
+          "passwordHistory": [],
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "reprompt": 0,
+          "revisionDate": "<ts>",
+          "secureNote": {
+            "type": 0
+          },
+          "sshKey": null,
+          "type": 2,
+          "userId": "<uuid>",
+          "viewPassword": true
+        }
+      }
+    },
+    {
+      "name": "cipher-archive",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/cc42dbbf-3ef5-4074-956b-ab22914085cf/archive",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "archivedDate": "<ts>",
+          "attachments": null,
+          "bankAccount": null,
+          "card": null,
+          "collectionIds": [],
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "driversLicense": null,
+          "edit": true,
+          "favorite": true,
+          "fields": [],
+          "folderId": "<uuid>",
+          "id": "<uuid>",
+          "identity": null,
+          "key": null,
+          "login": null,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "object": "cipherDetails",
+          "organizationId": null,
+          "organizationUseTotp": false,
+          "passport": null,
+          "passwordHistory": [],
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "reprompt": 0,
+          "revisionDate": "<ts>",
+          "secureNote": {
+            "type": 0
+          },
+          "sshKey": null,
+          "type": 2,
+          "userId": "<uuid>",
+          "viewPassword": true
+        }
+      }
+    },
+    {
+      "name": "cipher-unarchive",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/cc42dbbf-3ef5-4074-956b-ab22914085cf/unarchive",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "archivedDate": null,
+          "attachments": null,
+          "bankAccount": null,
+          "card": null,
+          "collectionIds": [],
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "driversLicense": null,
+          "edit": true,
+          "favorite": true,
+          "fields": [],
+          "folderId": "<uuid>",
+          "id": "<uuid>",
+          "identity": null,
+          "key": null,
+          "login": null,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "object": "cipherDetails",
+          "organizationId": null,
+          "organizationUseTotp": false,
+          "passport": null,
+          "passwordHistory": [],
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "reprompt": 0,
+          "revisionDate": "<ts>",
+          "secureNote": {
+            "type": 0
+          },
+          "sshKey": null,
+          "type": 2,
+          "userId": "<uuid>",
+          "viewPassword": true
+        }
+      }
+    },
+    {
+      "name": "cipher-hard-delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/ciphers/cc42dbbf-3ef5-4074-956b-ab22914085cf",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": null
+      }
+    },
+    {
+      "name": "cipher-get-deleted",
+      "request": {
+        "method": "GET",
+        "path": "/api/ciphers/cc42dbbf-3ef5-4074-956b-ab22914085cf",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "Cipher not found"
+        }
+      }
+    },
+    {
+      "name": "send-create-text",
+      "request": {
+        "method": "POST",
+        "path": "/api/sends",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "type": 0,
+          "name": "2.golden-send",
+          "notes": null,
+          "key": "2.golden-send-key",
+          "text": {
+            "text": "2.golden-send-text",
+            "hidden": false
+          },
+          "file": null,
+          "maxAccessCount": null,
+          "deletionDate": "<ts>",
+          "expirationDate": null,
+          "disabled": false,
+          "hideEmail": false,
+          "password": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "accessCount": 0,
+          "accessId": "h6ABdoF7QLm2UDWp6I1THw",
+          "authType": 2,
+          "deletionDate": "<ts>",
+          "disabled": false,
+          "expirationDate": null,
+          "file": null,
+          "hideEmail": false,
+          "id": "<uuid>",
+          "key": "2.golden-send-key",
+          "maxAccessCount": null,
+          "name": "2.golden-send",
+          "notes": null,
+          "object": "send",
+          "password": null,
+          "revisionDate": "<ts>",
+          "text": {
+            "hidden": false,
+            "text": "2.golden-send-text"
+          },
+          "type": 0
+        }
+      }
+    },
+    {
+      "name": "send-list",
+      "request": {
+        "method": "GET",
+        "path": "/api/sends",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "continuationToken": null,
+          "data": [
+            {
+              "accessCount": 0,
+              "accessId": "h6ABdoF7QLm2UDWp6I1THw",
+              "authType": 2,
+              "deletionDate": "<ts>",
+              "disabled": false,
+              "expirationDate": null,
+              "file": null,
+              "hideEmail": false,
+              "id": "<uuid>",
+              "key": "2.golden-send-key",
+              "maxAccessCount": null,
+              "name": "2.golden-send",
+              "notes": null,
+              "object": "send",
+              "password": null,
+              "revisionDate": "<ts>",
+              "text": {
+                "hidden": false,
+                "text": "2.golden-send-text"
+              },
+              "type": 0
+            }
+          ],
+          "object": "list"
+        }
+      }
+    },
+    {
+      "name": "send-get",
+      "request": {
+        "method": "GET",
+        "path": "/api/sends/87a00176-817b-40b9-b650-35a9e88d531f",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "accessCount": 0,
+          "accessId": "h6ABdoF7QLm2UDWp6I1THw",
+          "authType": 2,
+          "deletionDate": "<ts>",
+          "disabled": false,
+          "expirationDate": null,
+          "file": null,
+          "hideEmail": false,
+          "id": "<uuid>",
+          "key": "2.golden-send-key",
+          "maxAccessCount": null,
+          "name": "2.golden-send",
+          "notes": null,
+          "object": "send",
+          "password": null,
+          "revisionDate": "<ts>",
+          "text": {
+            "hidden": false,
+            "text": "2.golden-send-text"
+          },
+          "type": 0
+        }
+      }
+    },
+    {
+      "name": "cipher-get-missing",
+      "request": {
+        "method": "GET",
+        "path": "/api/ciphers/00000000-0000-4000-8000-000000000000",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "Cipher not found"
+        }
+      }
+    },
+    {
+      "name": "unauthenticated",
+      "request": {
+        "method": "GET",
+        "path": "/api/sync",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "Missing or invalid token"
+        }
+      }
+    },
+    {
+      "name": "bad-token",
+      "request": {
+        "method": "GET",
+        "path": "/api/sync",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "Invalid token"
+        }
+      }
+    },
+    {
+      "name": "token-refresh",
+      "request": {
+        "method": "POST",
+        "path": "/identity/connect/token",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "grant_type": "refresh_token",
+          "refresh_token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3OTgxMDE2MjEsIm5iZiI6MTc5NTUwOTYyMSwiaWF0IjoxNzk1NTA5NjIxLCJzdWIiOiJwYXNzd29yZCIsImRldmljZV90b2tlbiI6IlVMSzJCTGRsRU9kc0h6TzVjNENSY19XLTlvYkNzWFp1ZHFWc2V3dmkzZHFPME5ETkk2REo2eWp5dnB2d3VQMHl4ZnIzY1g2N0plWmZMbGNYOGt6VjJRPT0iLCJzc3RhbXAiOiJjYTFmOWI5Yy1hMWZjLTQ4YTQtYjhmMS00NTQ5NDY4YTM2MzgifQ.1U-Dubk0VyxU00zQJtL3wbKuN280y9QiK88EYTmTwnk",
+          "client_id": "cli",
+          "deviceIdentifier": "golden-device",
+          "deviceName": "Golden Device",
+          "deviceType": "9"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "access_token": "<opaque>",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "refresh_token": "<opaque>",
+          "scope": "api offline_access",
+          "Key": "golden-user-key",
+          "PrivateKey": "golden-encrypted-private-key",
+          "Kdf": 0,
+          "KdfIterations": 600000,
+          "KdfMemory": null,
+          "KdfParallelism": null,
+          "ResetMasterPassword": false,
+          "ForcePasswordReset": false,
+          "UserDecryptionOptions": {
+            "HasMasterPassword": true,
+            "MasterPasswordUnlock": {
+              "Kdf": {
+                "Iterations": 600000,
+                "KdfType": 0,
+                "Memory": null,
+                "Parallelism": null
+              },
+              "MasterKeyEncryptedUserKey": "golden-user-key",
+              "MasterKeyWrappedUserKey": "golden-user-key",
+              "Salt": "<email>"
+            },
+            "Object": "userDecryptionOptions"
+          },
+          "AccountKeys": {
+            "Object": "privateKeys",
+            "publicKeyEncryptionKeyPair": {
+              "Object": "publicKeyEncryptionKeyPair",
+              "publicKey": "golden-public-key",
+              "wrappedPrivateKey": "golden-encrypted-private-key"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "send-delete-cleanup",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/sends/87a00176-817b-40b9-b650-35a9e88d531f",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": null,
+        "body": ""
+      }
+    },
+    {
+      "name": "folder-delete-cleanup",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/folders/f29f3362-e389-4fa3-bcc9-0307a03db3a5",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": null
+      }
+    }
+  ]
+}

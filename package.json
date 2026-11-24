@@ -1,0 +1,41 @@
+{
+  "name": "warden-worker",
+  "version": "0.8.0",
+  "private": true,
+  "description": "Bitwarden-compatible server for Cloudflare Workers (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "wrangler dev --local --persist-to .wrangler/state",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "test:watch": "vitest",
+    "capture:golden": "node tools/capture-golden.mjs",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.4.0",
+    "hono": "^4.13.21",
+    "jose": "^6.2.18",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@cloudflare/vitest-plugin": "^1.9.1",
+    "@cloudflare/workers-types": "^5.20261124.1",
+    "assemblyscript": "^0.28.20",
+    "typescript": "~5.9.3",
+    "vitest": "^5.1.1",
+    "wrangler": "^4.167.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261123.1": true
+  }
+}

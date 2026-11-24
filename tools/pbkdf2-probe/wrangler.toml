@@ -1,0 +1,14 @@
+name = "warden-pbkdf2-probe"
+main = "src/index.ts"
+compatibility_date = "2025-09-19"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = false
+
+# The pure-JS PBKDF2 fallback needs the Durable Object CPU budget.
+[durable_objects]
+bindings = [{ name = "PROBE_DO", class_name = "ProbeDo" }]
+
+[[migrations]]
+tag = "probe_v1"
+new_sqlite_classes = ["ProbeDo"]

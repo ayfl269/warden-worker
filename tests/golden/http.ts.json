@@ -1,0 +1,1375 @@
+{
+  "baseUrl": "http://127.0.0.1:8788",
+  "capturedAt": "2026-11-24T10:15:32.284Z",
+  "note": "Captured from the Rust reference implementation. Volatile values are normalized.",
+  "cases": [
+    {
+      "name": "config",
+      "request": {
+        "method": "GET",
+        "path": "/api/config",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "version": "2026.6.0",
+          "gitHash": "5d84f176",
+          "server": {
+            "name": "Vaultwarden",
+            "url": "https://github.com/dani-garcia/vaultwarden"
+          },
+          "settings": {
+            "disableUserRegistration": true,
+            "suppressOnboardingInterstitials": false
+          },
+          "environment": {
+            "vault": "http://127.0.0.1:8788",
+            "api": "http://127.0.0.1:8788/api",
+            "identity": "http://127.0.0.1:8788/identity",
+            "notifications": "http://127.0.0.1:8788/notifications",
+            "sso": "",
+            "cloudRegion": null
+          },
+          "push": {
+            "pushTechnology": 0,
+            "vapidPublicKey": null
+          },
+          "featureStates": {
+            "pm-19051-send-email-verification": false,
+            "pm-19148-innovation-archive": true,
+            "cxp-import-mobile": true,
+            "cxp-export-mobile": true
+          },
+          "communication": null,
+          "object": "config"
+        }
+      }
+    },
+    {
+      "name": "version",
+      "request": {
+        "method": "GET",
+        "path": "/api/version",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": "2026.6.0"
+      }
+    },
+    {
+      "name": "now",
+      "request": {
+        "method": "GET",
+        "path": "/api/now",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": "<ts>"
+      }
+    },
+    {
+      "name": "hibp",
+      "request": {
+        "method": "GET",
+        "path": "/api/hibp/breach",
+        "query": "?username=test",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": []
+      }
+    },
+    {
+      "name": "alive",
+      "request": {
+        "method": "GET",
+        "path": "/api/alive",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": "<ts>"
+      }
+    },
+    {
+      "name": "unknown-route",
+      "request": {
+        "method": "GET",
+        "path": "/api/does-not-exist",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 404,
+        "contentType": null,
+        "body": ""
+      }
+    },
+    {
+      "name": "wrong-method",
+      "request": {
+        "method": "POST",
+        "path": "/api/config",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 405,
+        "contentType": null,
+        "body": ""
+      }
+    },
+    {
+      "name": "prelogin-missing-user",
+      "request": {
+        "method": "POST",
+        "path": "/identity/accounts/prelogin",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "email": "<email>"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "kdf": 0,
+          "kdfIterations": 600000,
+          "kdfMemory": null,
+          "kdfParallelism": null,
+          "kdfSettings": {
+            "iterations": 600000,
+            "kdfType": 0,
+            "memory": null,
+            "parallelism": null
+          },
+          "salt": null
+        }
+      }
+    },
+    {
+      "name": "register-current",
+      "request": {
+        "method": "POST",
+        "path": "/identity/accounts/register",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "email": "<email>",
+          "name": "Golden",
+          "masterPasswordHint": null,
+          "userAsymmetricKeys": {
+            "publicKey": "golden-public-key",
+            "encryptedPrivateKey": "golden-encrypted-private-key"
+          },
+          "masterPasswordAuthentication": {
+            "kdf": {
+              "kdfType": 0,
+              "iterations": 600000
+            },
+            "salt": "<email>",
+            "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          },
+          "masterPasswordUnlock": {
+            "kdf": {
+              "kdfType": 0,
+              "iterations": 600000
+            },
+            "salt": "<email>",
+            "key": "golden-user-key"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {}
+      }
+    },
+    {
+      "name": "token-password",
+      "request": {
+        "method": "POST",
+        "path": "/identity/connect/token",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "grant_type": "password",
+          "username": "golden@ayfl.cn",
+          "password": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "scope": "api offline_access",
+          "client_id": "cli",
+          "deviceType": "9",
+          "deviceIdentifier": "golden-device",
+          "deviceName": "Golden Device"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "access_token": "<opaque>",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "refresh_token": "<opaque>",
+          "scope": "api offline_access",
+          "Key": "golden-user-key",
+          "PrivateKey": "golden-encrypted-private-key",
+          "Kdf": 0,
+          "KdfIterations": 600000,
+          "KdfMemory": null,
+          "KdfParallelism": null,
+          "ResetMasterPassword": false,
+          "ForcePasswordReset": false,
+          "UserDecryptionOptions": {
+            "HasMasterPassword": true,
+            "MasterPasswordUnlock": {
+              "Kdf": {
+                "KdfType": 0,
+                "Iterations": 600000,
+                "Memory": null,
+                "Parallelism": null
+              },
+              "MasterKeyEncryptedUserKey": "golden-user-key",
+              "MasterKeyWrappedUserKey": "golden-user-key",
+              "Salt": "<email>"
+            },
+            "Object": "userDecryptionOptions"
+          },
+          "AccountKeys": {
+            "publicKeyEncryptionKeyPair": {
+              "wrappedPrivateKey": "golden-encrypted-private-key",
+              "publicKey": "golden-public-key",
+              "Object": "publicKeyEncryptionKeyPair"
+            },
+            "Object": "privateKeys"
+          }
+        }
+      }
+    },
+    {
+      "name": "sync-empty",
+      "request": {
+        "method": "GET",
+        "path": "/api/sync",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "profile": {
+            "avatarColor": null,
+            "email": "<email>",
+            "id": "<uuid>",
+            "securityStamp": "<uuid>",
+            "object": "profile",
+            "premiumFromOrganization": false,
+            "culture": "en-US",
+            "forcePasswordReset": false,
+            "emailVerified": true,
+            "twoFactorEnabled": false,
+            "premium": true,
+            "usesKeyConnector": false,
+            "creationDate": "<ts>",
+            "privateKey": "golden-encrypted-private-key",
+            "key": "golden-user-key",
+            "accountKeys": {
+              "publicKeyEncryptionKeyPair": {
+                "wrappedPrivateKey": "golden-encrypted-private-key",
+                "publicKey": "golden-public-key",
+                "signedPublicKey": null,
+                "object": "publicKeyEncryptionKeyPair"
+              },
+              "securityState": null,
+              "signatureKeyPair": null,
+              "object": "privateKeys"
+            },
+            "organizations": [],
+            "providers": [],
+            "providerOrganizations": [],
+            "_status": 0,
+            "name": "Golden"
+          },
+          "folders": [],
+          "collections": [],
+          "policies": [],
+          "ciphers": [],
+          "domains": {
+            "equivalentDomains": [],
+            "globalEquivalentDomains": [],
+            "object": "domains"
+          },
+          "sends": [],
+          "userDecryption": {
+            "masterPasswordUnlock": {
+              "kdf": {
+                "kdfType": 0,
+                "iterations": 600000,
+                "memory": null,
+                "parallelism": null
+              },
+              "masterKeyEncryptedUserKey": "golden-user-key",
+              "masterKeyWrappedUserKey": "golden-user-key",
+              "salt": "<email>"
+            }
+          },
+          "object": "sync"
+        }
+      }
+    },
+    {
+      "name": "profile",
+      "request": {
+        "method": "GET",
+        "path": "/api/accounts/profile",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "avatarColor": null,
+          "email": "<email>",
+          "id": "<uuid>",
+          "securityStamp": "<uuid>",
+          "object": "profile",
+          "premiumFromOrganization": false,
+          "culture": "en-US",
+          "forcePasswordReset": false,
+          "emailVerified": true,
+          "twoFactorEnabled": false,
+          "premium": true,
+          "usesKeyConnector": false,
+          "creationDate": "<ts>",
+          "privateKey": "golden-encrypted-private-key",
+          "key": "golden-user-key",
+          "accountKeys": {
+            "publicKeyEncryptionKeyPair": {
+              "wrappedPrivateKey": "golden-encrypted-private-key",
+              "publicKey": "golden-public-key",
+              "signedPublicKey": null,
+              "object": "publicKeyEncryptionKeyPair"
+            },
+            "securityState": null,
+            "signatureKeyPair": null,
+            "object": "privateKeys"
+          },
+          "organizations": [],
+          "providers": [],
+          "providerOrganizations": [],
+          "_status": 0,
+          "name": "Golden"
+        }
+      }
+    },
+    {
+      "name": "revision-date",
+      "request": {
+        "method": "GET",
+        "path": "/api/accounts/revision-date",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": 1795515331919
+      }
+    },
+    {
+      "name": "two-factor-list",
+      "request": {
+        "method": "GET",
+        "path": "/api/two-factor",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "data": [],
+          "object": "list",
+          "continuationToken": null
+        }
+      }
+    },
+    {
+      "name": "folder-create",
+      "request": {
+        "method": "POST",
+        "path": "/api/folders",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "name": "2.golden-folder-name"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "id": "<uuid>",
+          "name": "2.golden-folder-name",
+          "revisionDate": "<ts>",
+          "object": "folder"
+        }
+      }
+    },
+    {
+      "name": "folder-list",
+      "request": {
+        "method": "GET",
+        "path": "/api/folders",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "data": [
+            {
+              "id": "<uuid>",
+              "name": "2.golden-folder-name",
+              "revisionDate": "<ts>",
+              "object": "folder"
+            }
+          ],
+          "object": "list",
+          "continuationToken": null
+        }
+      }
+    },
+    {
+      "name": "folder-get",
+      "request": {
+        "method": "GET",
+        "path": "/api/folders/ab404a43-dc45-4697-ae20-c893ce73d496",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "id": "<uuid>",
+          "name": "2.golden-folder-name",
+          "revisionDate": "<ts>",
+          "object": "folder"
+        }
+      }
+    },
+    {
+      "name": "cipher-create",
+      "request": {
+        "method": "POST",
+        "path": "/api/ciphers",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "type": 2,
+          "name": "2.golden-note",
+          "notes": null,
+          "folderId": "<uuid>",
+          "favorite": false,
+          "secureNote": {
+            "type": 0
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "object": "cipher",
+          "id": "<uuid>",
+          "userId": "<uuid>",
+          "organizationId": null,
+          "folderId": "<uuid>",
+          "type": 2,
+          "favorite": false,
+          "edit": true,
+          "viewPassword": true,
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "organizationUseTotp": false,
+          "collectionIds": [],
+          "revisionDate": "<ts>",
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "archivedDate": null,
+          "attachments": null,
+          "name": "2.golden-note",
+          "notes": null,
+          "fields": [],
+          "passwordHistory": [],
+          "reprompt": 0,
+          "key": null,
+          "login": null,
+          "secureNote": {
+            "type": 0
+          },
+          "card": null,
+          "identity": null,
+          "sshKey": null,
+          "bankAccount": null,
+          "driversLicense": null,
+          "passport": null
+        }
+      }
+    },
+    {
+      "name": "cipher-list",
+      "request": {
+        "method": "GET",
+        "path": "/api/ciphers",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "data": [
+            {
+              "object": "cipherDetails",
+              "id": "<uuid>",
+              "userId": "<uuid>",
+              "organizationId": null,
+              "folderId": "<uuid>",
+              "type": 2,
+              "favorite": false,
+              "edit": true,
+              "viewPassword": true,
+              "permissions": {
+                "delete": true,
+                "restore": true
+              },
+              "organizationUseTotp": false,
+              "collectionIds": [],
+              "revisionDate": "<ts>",
+              "creationDate": "<ts>",
+              "deletedDate": null,
+              "archivedDate": null,
+              "attachments": null,
+              "name": "2.golden-note",
+              "notes": null,
+              "fields": [],
+              "passwordHistory": [],
+              "reprompt": 0,
+              "key": null,
+              "login": null,
+              "secureNote": {
+                "type": 0
+              },
+              "card": null,
+              "identity": null,
+              "sshKey": null,
+              "bankAccount": null,
+              "driversLicense": null,
+              "passport": null
+            }
+          ],
+          "object": "list",
+          "continuationToken": null
+        }
+      }
+    },
+    {
+      "name": "cipher-get",
+      "request": {
+        "method": "GET",
+        "path": "/api/ciphers/62a94514-5389-48fd-9efa-236ed03d2d62",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "object": "cipherDetails",
+          "id": "<uuid>",
+          "userId": "<uuid>",
+          "organizationId": null,
+          "folderId": "<uuid>",
+          "type": 2,
+          "favorite": false,
+          "edit": true,
+          "viewPassword": true,
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "organizationUseTotp": false,
+          "collectionIds": [],
+          "revisionDate": "<ts>",
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "archivedDate": null,
+          "attachments": null,
+          "name": "2.golden-note",
+          "notes": null,
+          "fields": [],
+          "passwordHistory": [],
+          "reprompt": 0,
+          "key": null,
+          "login": null,
+          "secureNote": {
+            "type": 0
+          },
+          "card": null,
+          "identity": null,
+          "sshKey": null,
+          "bankAccount": null,
+          "driversLicense": null,
+          "passport": null
+        }
+      }
+    },
+    {
+      "name": "cipher-partial-favorite",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/62a94514-5389-48fd-9efa-236ed03d2d62/partial",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "favorite": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "object": "cipherDetails",
+          "id": "<uuid>",
+          "userId": "<uuid>",
+          "organizationId": null,
+          "folderId": null,
+          "type": 2,
+          "favorite": true,
+          "edit": true,
+          "viewPassword": true,
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "organizationUseTotp": false,
+          "collectionIds": [],
+          "revisionDate": "<ts>",
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "archivedDate": null,
+          "attachments": null,
+          "name": "2.golden-note",
+          "notes": null,
+          "fields": [],
+          "passwordHistory": [],
+          "reprompt": 0,
+          "key": null,
+          "login": null,
+          "secureNote": {
+            "type": 0
+          },
+          "card": null,
+          "identity": null,
+          "sshKey": null,
+          "bankAccount": null,
+          "driversLicense": null,
+          "passport": null
+        }
+      }
+    },
+    {
+      "name": "cipher-update",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/62a94514-5389-48fd-9efa-236ed03d2d62",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "type": 2,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "folderId": "<uuid>",
+          "favorite": true,
+          "secureNote": {
+            "type": 0
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "object": "cipher",
+          "id": "<uuid>",
+          "userId": "<uuid>",
+          "organizationId": null,
+          "folderId": "<uuid>",
+          "type": 2,
+          "favorite": true,
+          "edit": true,
+          "viewPassword": true,
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "organizationUseTotp": false,
+          "collectionIds": [],
+          "revisionDate": "<ts>",
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "archivedDate": null,
+          "attachments": null,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "fields": [],
+          "passwordHistory": [],
+          "reprompt": 0,
+          "key": null,
+          "login": null,
+          "secureNote": {
+            "type": 0
+          },
+          "card": null,
+          "identity": null,
+          "sshKey": null,
+          "bankAccount": null,
+          "driversLicense": null,
+          "passport": null
+        }
+      }
+    },
+    {
+      "name": "sync-with-cipher",
+      "request": {
+        "method": "GET",
+        "path": "/api/sync",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "profile": {
+            "avatarColor": null,
+            "email": "<email>",
+            "id": "<uuid>",
+            "securityStamp": "<uuid>",
+            "object": "profile",
+            "premiumFromOrganization": false,
+            "culture": "en-US",
+            "forcePasswordReset": false,
+            "emailVerified": true,
+            "twoFactorEnabled": false,
+            "premium": true,
+            "usesKeyConnector": false,
+            "creationDate": "<ts>",
+            "privateKey": "golden-encrypted-private-key",
+            "key": "golden-user-key",
+            "accountKeys": {
+              "publicKeyEncryptionKeyPair": {
+                "wrappedPrivateKey": "golden-encrypted-private-key",
+                "publicKey": "golden-public-key",
+                "signedPublicKey": null,
+                "object": "publicKeyEncryptionKeyPair"
+              },
+              "securityState": null,
+              "signatureKeyPair": null,
+              "object": "privateKeys"
+            },
+            "organizations": [],
+            "providers": [],
+            "providerOrganizations": [],
+            "_status": 0,
+            "name": "Golden"
+          },
+          "folders": [
+            {
+              "id": "<uuid>",
+              "name": "2.golden-folder-name",
+              "revisionDate": "<ts>",
+              "object": "folder"
+            }
+          ],
+          "collections": [],
+          "policies": [],
+          "ciphers": [
+            {
+              "object": "cipherDetails",
+              "id": "<uuid>",
+              "userId": "<uuid>",
+              "organizationId": null,
+              "folderId": "<uuid>",
+              "type": 2,
+              "favorite": true,
+              "edit": true,
+              "viewPassword": true,
+              "permissions": {
+                "delete": true,
+                "restore": true
+              },
+              "organizationUseTotp": false,
+              "collectionIds": [],
+              "revisionDate": "<ts>",
+              "creationDate": "<ts>",
+              "deletedDate": null,
+              "archivedDate": null,
+              "attachments": null,
+              "name": "2.golden-note-updated",
+              "notes": "2.notes",
+              "fields": [],
+              "passwordHistory": [],
+              "reprompt": 0,
+              "key": null,
+              "login": null,
+              "secureNote": {
+                "type": 0
+              },
+              "card": null,
+              "identity": null,
+              "sshKey": null,
+              "bankAccount": null,
+              "driversLicense": null,
+              "passport": null
+            }
+          ],
+          "domains": {
+            "equivalentDomains": [],
+            "globalEquivalentDomains": [],
+            "object": "domains"
+          },
+          "sends": [],
+          "userDecryption": {
+            "masterPasswordUnlock": {
+              "kdf": {
+                "kdfType": 0,
+                "iterations": 600000,
+                "memory": null,
+                "parallelism": null
+              },
+              "masterKeyEncryptedUserKey": "golden-user-key",
+              "masterKeyWrappedUserKey": "golden-user-key",
+              "salt": "<email>"
+            }
+          },
+          "object": "sync"
+        }
+      }
+    },
+    {
+      "name": "cipher-soft-delete",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/62a94514-5389-48fd-9efa-236ed03d2d62/delete",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": null
+      }
+    },
+    {
+      "name": "cipher-restore",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/62a94514-5389-48fd-9efa-236ed03d2d62/restore",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "object": "cipherDetails",
+          "id": "<uuid>",
+          "userId": "<uuid>",
+          "organizationId": null,
+          "folderId": "<uuid>",
+          "type": 2,
+          "favorite": true,
+          "edit": true,
+          "viewPassword": true,
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "organizationUseTotp": false,
+          "collectionIds": [],
+          "revisionDate": "<ts>",
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "archivedDate": null,
+          "attachments": null,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "fields": [],
+          "passwordHistory": [],
+          "reprompt": 0,
+          "key": null,
+          "login": null,
+          "secureNote": {
+            "type": 0
+          },
+          "card": null,
+          "identity": null,
+          "sshKey": null,
+          "bankAccount": null,
+          "driversLicense": null,
+          "passport": null
+        }
+      }
+    },
+    {
+      "name": "cipher-archive",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/62a94514-5389-48fd-9efa-236ed03d2d62/archive",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "object": "cipherDetails",
+          "id": "<uuid>",
+          "userId": "<uuid>",
+          "organizationId": null,
+          "folderId": "<uuid>",
+          "type": 2,
+          "favorite": true,
+          "edit": true,
+          "viewPassword": true,
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "organizationUseTotp": false,
+          "collectionIds": [],
+          "revisionDate": "<ts>",
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "archivedDate": "<ts>",
+          "attachments": null,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "fields": [],
+          "passwordHistory": [],
+          "reprompt": 0,
+          "key": null,
+          "login": null,
+          "secureNote": {
+            "type": 0
+          },
+          "card": null,
+          "identity": null,
+          "sshKey": null,
+          "bankAccount": null,
+          "driversLicense": null,
+          "passport": null
+        }
+      }
+    },
+    {
+      "name": "cipher-unarchive",
+      "request": {
+        "method": "PUT",
+        "path": "/api/ciphers/62a94514-5389-48fd-9efa-236ed03d2d62/unarchive",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "object": "cipherDetails",
+          "id": "<uuid>",
+          "userId": "<uuid>",
+          "organizationId": null,
+          "folderId": "<uuid>",
+          "type": 2,
+          "favorite": true,
+          "edit": true,
+          "viewPassword": true,
+          "permissions": {
+            "delete": true,
+            "restore": true
+          },
+          "organizationUseTotp": false,
+          "collectionIds": [],
+          "revisionDate": "<ts>",
+          "creationDate": "<ts>",
+          "deletedDate": null,
+          "archivedDate": null,
+          "attachments": null,
+          "name": "2.golden-note-updated",
+          "notes": "2.notes",
+          "fields": [],
+          "passwordHistory": [],
+          "reprompt": 0,
+          "key": null,
+          "login": null,
+          "secureNote": {
+            "type": 0
+          },
+          "card": null,
+          "identity": null,
+          "sshKey": null,
+          "bankAccount": null,
+          "driversLicense": null,
+          "passport": null
+        }
+      }
+    },
+    {
+      "name": "cipher-hard-delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/ciphers/62a94514-5389-48fd-9efa-236ed03d2d62",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": null
+      }
+    },
+    {
+      "name": "cipher-get-deleted",
+      "request": {
+        "method": "GET",
+        "path": "/api/ciphers/62a94514-5389-48fd-9efa-236ed03d2d62",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "Cipher not found"
+        }
+      }
+    },
+    {
+      "name": "send-create-text",
+      "request": {
+        "method": "POST",
+        "path": "/api/sends",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "type": 0,
+          "name": "2.golden-send",
+          "notes": null,
+          "key": "2.golden-send-key",
+          "text": {
+            "text": "2.golden-send-text",
+            "hidden": false
+          },
+          "file": null,
+          "maxAccessCount": null,
+          "deletionDate": "<ts>",
+          "expirationDate": null,
+          "disabled": false,
+          "hideEmail": false,
+          "password": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "id": "<uuid>",
+          "accessId": "A9E1aeyVT4GTtUNYrTr-fw",
+          "type": 0,
+          "name": "2.golden-send",
+          "notes": null,
+          "text": {
+            "text": "2.golden-send-text",
+            "hidden": false
+          },
+          "file": null,
+          "key": "2.golden-send-key",
+          "maxAccessCount": null,
+          "accessCount": 0,
+          "revisionDate": "<ts>",
+          "expirationDate": null,
+          "deletionDate": "<ts>",
+          "disabled": false,
+          "hideEmail": false,
+          "password": null,
+          "authType": 2,
+          "object": "send"
+        }
+      }
+    },
+    {
+      "name": "send-list",
+      "request": {
+        "method": "GET",
+        "path": "/api/sends",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "data": [
+            {
+              "id": "<uuid>",
+              "accessId": "A9E1aeyVT4GTtUNYrTr-fw",
+              "type": 0,
+              "name": "2.golden-send",
+              "notes": null,
+              "text": {
+                "text": "2.golden-send-text",
+                "hidden": false
+              },
+              "file": null,
+              "key": "2.golden-send-key",
+              "maxAccessCount": null,
+              "accessCount": 0,
+              "revisionDate": "<ts>",
+              "expirationDate": null,
+              "deletionDate": "<ts>",
+              "disabled": false,
+              "hideEmail": false,
+              "password": null,
+              "authType": 2,
+              "object": "send"
+            }
+          ],
+          "object": "list",
+          "continuationToken": null
+        }
+      }
+    },
+    {
+      "name": "send-get",
+      "request": {
+        "method": "GET",
+        "path": "/api/sends/03d13569-ec95-4f81-93b5-4358ad3afe7f",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "id": "<uuid>",
+          "accessId": "A9E1aeyVT4GTtUNYrTr-fw",
+          "type": 0,
+          "name": "2.golden-send",
+          "notes": null,
+          "text": {
+            "text": "2.golden-send-text",
+            "hidden": false
+          },
+          "file": null,
+          "key": "2.golden-send-key",
+          "maxAccessCount": null,
+          "accessCount": 0,
+          "revisionDate": "<ts>",
+          "expirationDate": null,
+          "deletionDate": "<ts>",
+          "disabled": false,
+          "hideEmail": false,
+          "password": null,
+          "authType": 2,
+          "object": "send"
+        }
+      }
+    },
+    {
+      "name": "cipher-get-missing",
+      "request": {
+        "method": "GET",
+        "path": "/api/ciphers/00000000-0000-4000-8000-000000000000",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "Cipher not found"
+        }
+      }
+    },
+    {
+      "name": "unauthenticated",
+      "request": {
+        "method": "GET",
+        "path": "/api/sync",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "Missing or invalid token"
+        }
+      }
+    },
+    {
+      "name": "bad-token",
+      "request": {
+        "method": "GET",
+        "path": "/api/sync",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "Invalid token"
+        }
+      }
+    },
+    {
+      "name": "token-refresh",
+      "request": {
+        "method": "POST",
+        "path": "/identity/connect/token",
+        "query": "",
+        "hasBody": true,
+        "body": {
+          "grant_type": "refresh_token",
+          "refresh_token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwYXNzd29yZCIsImRldmljZV90b2tlbiI6ImVlSlQ2cXhVdXRrSnc4RmtKU2lfNkNyNnQ4d2ZUZGF5RnlvNXJUWFNYMHpNR3VuRmFLaXNKUDNNeGFzaTRhdnRoNF9Ddnhtd0JRbHhHZDlWTktMRm5BPT0iLCJzc3RhbXAiOiJiMWEwMGRiMC0xNzQ4LTQwZGYtOTE4Ni05ZjkxNjcwNDc4MDEiLCJpYXQiOjE3OTU1MTUzMzIsIm5iZiI6MTc5NTUxNTMzMiwiZXhwIjoxNzk4MTA3MzMyfQ.1WG77os4EMxEUAvPCMtJYwpTfdXzaXFpCB_DUqr0bVU",
+          "client_id": "cli",
+          "deviceIdentifier": "golden-device",
+          "deviceName": "Golden Device",
+          "deviceType": "9"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "access_token": "<opaque>",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "refresh_token": "<opaque>",
+          "scope": "api offline_access",
+          "Key": "golden-user-key",
+          "PrivateKey": "golden-encrypted-private-key",
+          "Kdf": 0,
+          "KdfIterations": 600000,
+          "KdfMemory": null,
+          "KdfParallelism": null,
+          "ResetMasterPassword": false,
+          "ForcePasswordReset": false,
+          "UserDecryptionOptions": {
+            "HasMasterPassword": true,
+            "MasterPasswordUnlock": {
+              "Kdf": {
+                "KdfType": 0,
+                "Iterations": 600000,
+                "Memory": null,
+                "Parallelism": null
+              },
+              "MasterKeyEncryptedUserKey": "golden-user-key",
+              "MasterKeyWrappedUserKey": "golden-user-key",
+              "Salt": "<email>"
+            },
+            "Object": "userDecryptionOptions"
+          },
+          "AccountKeys": {
+            "publicKeyEncryptionKeyPair": {
+              "wrappedPrivateKey": "golden-encrypted-private-key",
+              "publicKey": "golden-public-key",
+              "Object": "publicKeyEncryptionKeyPair"
+            },
+            "Object": "privateKeys"
+          }
+        }
+      }
+    },
+    {
+      "name": "send-delete-cleanup",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/sends/03d13569-ec95-4f81-93b5-4358ad3afe7f",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "folder-delete-cleanup",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/folders/ab404a43-dc45-4697-ae20-c893ce73d496",
+        "query": "",
+        "hasBody": false,
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": null
+      }
+    }
+  ]
+}
