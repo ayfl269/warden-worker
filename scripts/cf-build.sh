@@ -31,7 +31,7 @@ set -euo pipefail
 # Run from the repository root regardless of where the script is invoked.
 cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 
-BW_WEB_VERSION="${BW_WEB_VERSION:-v2026.6.4}"
+BW_WEB_VERSION="${BW_WEB_VERSION:-v2026.10.1}"
 
 step() { printf '\n\033[1m=== %s ===\033[0m\n' "$1"; }
 

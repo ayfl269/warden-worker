@@ -20,6 +20,7 @@
     "test:integration": "vitest run -c vitest.integration.config.ts",
     "test:watch": "vitest",
     "capture:golden": "node tools/capture-golden.mjs",
+    "security:test": "node tools/security-test.mjs",
     "lint": "biome check .",
     "format": "biome format --write ."
   },

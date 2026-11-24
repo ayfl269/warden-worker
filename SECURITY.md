@@ -28,7 +28,7 @@ Security fixes are provided on a best-effort basis for the latest release and th
 ## In Scope
 
 - Backend implementation in `src/` (auth, crypto, handlers, database access).
-- Worker entrypoint and edge concerns in `src/entry.js` (routing, attachment streaming, Durable Objects offload).
+- Worker entrypoint and edge concerns in `src/index.ts` (routing, attachment streaming, Durable Objects offload).
 - Wrangler configuration in `wrangler.toml` (bindings, rate limiting, routes).
 - Database schema and migrations (`sql/`, `migrations/`).
 - Deployment tooling and scripts (`docs/`, `scripts/`, GitHub Actions workflows).
@@ -52,4 +52,40 @@ This project is "self-hosted": **your Cloudflare account is part of your securit
 - Ensure rate limiting is configured (see `wrangler.toml` `[[ratelimits]]` bindings); missing bindings degrade gracefully and may reduce protection.
 - Treat Cloudflare API tokens as highly sensitive; grant least privilege and rotate when needed.
 - Protect backups and exports (D1 backups, logs) as they may contain sensitive metadata.
+
+## Running the security test
+
+`tools/security-test.mjs` exercises a **deployed** instance: auth bypass, cross-user
+access, token scoping, injection, input limits, CORS, enumeration, 2FA, session
+invalidation and rate limiting. It creates two throwaway accounts and runs the rate-limit
+checks last.
+
+```bash
+SMOKE_BASE=https://vault.example.com npm run security:test
+```
+
+Every check is an attack that must be refused. `FAIL` means "investigate"; `WARN` marks a
+known trade-off listed below.
+
+## Known limitations (not vulnerabilities in the reported sense)
+
+- **Password hints are returned in-band.** Bitwarden emails the hint; this project has no
+  mail delivery, so `POST /api/accounts/password-hint` returns it in the response body to an
+  unauthenticated caller (the reference implementation does the same). Anyone who can reach
+  the endpoint and knows an email address can read that user's hint. Keep hints vague, or
+  block the endpoint at the edge if that matters to you.
+- **Login timing reveals whether an account exists.** A known user pays a real 600k
+  PBKDF2 (~1.4 s); an unknown one only pays `LOGIN_MISSING_USER_DELAY_MS` (default 550 ms).
+  Raise that variable to roughly the PBKDF2 cost if this matters. `prelogin` responses are
+  identical either way.
+- **Rate limiting fails open.** A missing or failing rate-limit binding disables the limit
+  rather than rejecting traffic (matching the reference implementation). Keep the
+  `[[ratelimits]]` bindings in place.
+- **KDF iteration counts are only lower-bounded.** A client can store a count it can never
+  derive, locking itself out; no server-side path uses that value for work.
+- **Internal error text is echoed on 500s** (`Worker error: <binding message>`), matching the
+  reference implementation. It can reveal binding names and, on registration, whether an
+  email is already taken.
+- **No per-device revocation endpoint.** Only the global logout-all (`security-stamp`) and
+  password change invalidate sessions; refresh tokens are not rotated on use.
 

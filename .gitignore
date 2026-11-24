@@ -1,6 +1,12 @@
 node_modules
 .wrangler
 .env
+.env.*
+# Local wrangler secrets (AGENTS.md tells developers to keep keys here)
+.dev.vars
+.dev.vars.*
+# Golden-capture credentials
+.golden-*
 # Frontend files (downloaded by `npm run frontend`, see tools/fetch-web-vault.mjs)
 public/web-vault/
 public/.web-vault-version

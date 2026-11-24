@@ -266,8 +266,17 @@ async function downloadVerified(url, releaseBase, asset, tarball) {
     console.log(`  received ${formatBytes(size)}`);
 
     if (expected === null) {
-      console.log('  no published sha256 found, skipping verification');
-      return;
+      // The extracted tree is served to every user, so an unverifiable archive
+      // is a supply-chain risk. Opt out explicitly if the sums file is missing.
+      if (process.env.BW_WEB_ALLOW_UNVERIFIED === '1') {
+        console.log('  no published sha256 found; continuing (BW_WEB_ALLOW_UNVERIFIED=1)');
+        return;
+      }
+      await rm(tarball, { force: true });
+      throw new Error(
+        `no published sha256 for ${asset}; refusing to install unverified assets ` +
+          '(set BW_WEB_ALLOW_UNVERIFIED=1 to override)',
+      );
     }
 
     const actual = await sha256File(tarball);

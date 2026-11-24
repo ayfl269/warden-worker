@@ -61,7 +61,7 @@ jobs:
               run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
 
             - name: Install wrangler
-              run: npm install -g wrangler
+              run: npm install -g wrangler@4.167.0
 
             - name: Get D1 Database Name
               id: db_name
@@ -102,7 +102,7 @@ jobs:
                     openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 \
                       -in backup.sql.gz \
                       -out "vault1_prod_${{ steps.date.outputs.date }}.sql.gz.enc" \
-                      -pass pass:"$BACKUP_ENCRYPTION_KEY"
+                      -pass env:BACKUP_ENCRYPTION_KEY
                     rm backup.sql.gz
                     echo "✅ Backup encrypted: vault1_prod_${{ steps.date.outputs.date }}.sql.gz.enc"
                     ls -lh *.enc
@@ -255,7 +255,7 @@ jobs:
               run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
 
             - name: Install wrangler
-              run: npm install -g wrangler
+              run: npm install -g wrangler@4.167.0
 
             - name: Get D1 Database Name (Dev)
               id: db_name
@@ -295,7 +295,7 @@ jobs:
                     openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 \
                       -in backup.sql.gz \
                       -out "vault1_dev_${{ steps.date.outputs.date }}.sql.gz.enc" \
-                      -pass pass:"$BACKUP_ENCRYPTION_KEY"
+                      -pass env:BACKUP_ENCRYPTION_KEY
                     rm backup.sql.gz
                     echo "✅ Backup encrypted: vault1_dev_${{ steps.date.outputs.date }}.sql.gz.enc"
                     ls -lh *.enc
