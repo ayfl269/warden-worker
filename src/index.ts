@@ -6,6 +6,7 @@ import { HeavyDo } from './durable/heavy';
 import { NotifyDo } from './durable/notify';
 import type { Env } from './env';
 import { handleStreaming, isStreamingRoute } from './handlers/streaming';
+import { runScheduledPurges } from './maintenance/purge';
 import { shouldOffloadHeavy, shouldOffloadToken } from './routing/heavyRoutes';
 
 export { HeavyDo, NotifyDo };
@@ -126,11 +127,10 @@ export default {
 
   async scheduled(
     _controller: ScheduledController,
-    _env: Env,
+    env: Env,
     _ctx: ExecutionContext,
   ): Promise<void> {
-    // P3 wires the five purge tasks (stale attachments, soft-deleted ciphers,
-    // stale pending sends, expired sends, expired auth requests) in order.
-    console.error('[cron] scheduled handler is not implemented yet (P3)');
+    const report = await runScheduledPurges(env);
+    console.log(`[cron] purge summary ${JSON.stringify(report)}`);
   },
 };

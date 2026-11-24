@@ -24,6 +24,7 @@ specification of the client contract.
 - `src/models/` — request/response payloads and serializers.
 - `src/auth/` — PBKDF2, JWT, TOTP, device types, auth middleware.
 - `src/db/` — D1 access; SQL strings intentionally match the reference implementation.
+- `src/maintenance/` — the cron purge tasks (`scheduled()` in `src/index.ts`).
 - `src/notifications/` — MessagePack framing, fan-out, push relay.
 - `src/durable/` — `HeavyDo` (reuses the Hono app) and `NotifyDo` (WebSocket hub).
 - `tests/unit/` — handler tests against a real SQLite-backed D1 adapter.

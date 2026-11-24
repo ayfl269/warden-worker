@@ -15,7 +15,7 @@ npm run frontend
 npx wrangler deploy --dry-run --outdir .wrangler/dry-run
 ```
 
-Expected: `tsc` exits 0, 285 tests pass, no lint errors, and the bundle builds (~1.1 MB,
+Expected: `tsc` exits 0, 301 tests pass, no lint errors, and the bundle builds (~1.1 MB,
 ~200 KiB gzip, plus the 6.7 KB PBKDF2 WASM module).
 
 ## What is verified
@@ -30,6 +30,8 @@ Expected: `tsc` exits 0, 285 tests pass, no lint errors, and the bundle builds (
 | Push relay | `tests/unit/notifications-push.test.ts` | Gate, OAuth2 form fields, cache key/max-age, envelope key order, no network when disabled. |
 | HTTP behaviour | `tests/unit/handlers-*.test.ts` | Real Hono app + real SQLite (`node:sqlite` + `sql/schema.sql`): identity, accounts, 2FA, devices, auth requests, ciphers, folders, sync, import, domains, attachments (streaming + multipart), Sends (text/file/access), misc stubs. |
 | Wire contract | `tests/golden/http.json` | 38 recorded HTTP exchanges from the Rust worker this implementation was ported from. All 38 reproduce byte-identically. |
+| Storage cleanup | `tests/unit/storage-cleanup.test.ts` | Hard delete, bulk delete, vault purge and account deletion remove the attachment/Send objects; a crafted id list never reaches another user's objects. |
+| Scheduled maintenance | `tests/unit/maintenance-purge.test.ts` | The five cron tasks: retention windows, `TRASH_AUTO_DELETE_DAYS` semantics (`0`/negative disables), storage cleanup, revision bump, and isolation when a task fails. |
 
 ### Byte-level HTTP contract
 

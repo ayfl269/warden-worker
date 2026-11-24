@@ -40,9 +40,10 @@ class SqliteStatement {
     return { results: rows, success: true };
   }
 
-  async run(): Promise<{ success: true }> {
-    this.db.prepare(this.sql).run(...this.params);
-    return { success: true };
+  async run(): Promise<{ success: true; meta: { changes: number } }> {
+    const result = this.db.prepare(this.sql).run(...this.params);
+    // D1 reports affected rows through `meta.changes`; the purge tasks rely on it.
+    return { success: true, meta: { changes: Number(result.changes ?? 0) } };
   }
 }
 

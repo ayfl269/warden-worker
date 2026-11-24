@@ -279,6 +279,24 @@ D1 migrations in `cf-deploy.sh` reuse that one token.
 > (`npx wrangler kv namespace create ATTACHMENTS_KV`) and put its id in `wrangler.toml`
 > before connecting the repository.
 
+## Scheduled maintenance
+
+`wrangler.toml` declares one cron trigger (`0 3 * * *`). The `scheduled()` handler runs five
+purge tasks in order and logs a summary line per task:
+
+| Task | Retention | Also deletes storage objects |
+|---|---|---|
+| unfinished attachment uploads | 1 day | — |
+| ciphers in the trash | `TRASH_AUTO_DELETE_DAYS` (default 30) | yes |
+| unfinished file Send uploads | 1 day | yes |
+| Sends past `deletionDate` | — | yes |
+| unanswered auth requests | 15 minutes | — |
+
+`TRASH_AUTO_DELETE_DAYS=0` (or any negative value) disables trash auto-purge; the other four
+tasks always run. The same cleanup happens synchronously on the delete paths — deleting a
+cipher, emptying the vault, or deleting the account removes the attachment and Send objects
+in KV/R2 immediately, so nothing is left behind between cron runs.
+
 ## Verification before cutover
 
 1. Golden fixtures captured from the Rust worker (`npm run capture:golden`) and diffed

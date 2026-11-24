@@ -146,6 +146,19 @@ Offloading is enabled whenever the `HEAVY_DO` binding exists.
 * **Mobile push**: set `PUSH_ENABLED=true` plus `PUSH_INSTALLATION_ID` and
   `PUSH_INSTALLATION_KEY` (from <https://bitwarden.com/host/>).
 
+### Scheduled maintenance
+
+The cron trigger (`0 3 * * *`) runs five purge tasks, in this order:
+
+1. unfinished attachment uploads older than a day (`attachments_pending`)
+2. ciphers trashed longer than `TRASH_AUTO_DELETE_DAYS` (default 30, `0` or negative
+   disables), **including their attachment objects**, then a revision bump so clients resync
+3. unfinished file Send uploads older than a day (`sends_pending`)
+4. Sends past their `deletionDate`, **including their file objects**
+5. auth requests older than 15 minutes
+
+Each task is isolated: a failure is logged and the rest still run.
+
 ### Rate limiting
 
 Sensitive endpoints use Cloudflare's Rate Limiting binding. Missing bindings fail open.
@@ -214,7 +227,7 @@ does **not** deploy; `backup-d1.yaml` handles scheduled D1 exports.
 See [docs/verification.md](docs/verification.md) for the full matrix, reproduction commands
 and the remaining checklist.
 
-Verified (`npm test`, 285 tests):
+Verified (`npm test`, 301 tests):
 
 * HTTP handlers end to end against real SQLite (`node:sqlite` + `sql/schema.sql`).
 * PBKDF2/TOTP/JWT vectors, MessagePack framing, error mapping, routing.
