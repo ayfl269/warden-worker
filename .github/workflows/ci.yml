@@ -34,5 +34,13 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Build PBKDF2 WebAssembly module
+        run: npm run build:wasm
+
+      - name: Download Web Vault frontend
+        run: npm run frontend
+        env:
+          BW_WEB_VERSION: ${{ vars.BW_WEB_VERSION || 'v2026.6.4' }}
+
       - name: Bundle (dry run)
         run: npx wrangler deploy --dry-run --outdir .wrangler/dry-run

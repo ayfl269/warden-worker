@@ -8,8 +8,12 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "frontend": "node tools/fetch-web-vault.mjs",
+    "predev": "node tools/fetch-web-vault.mjs",
     "dev": "wrangler dev --local --persist-to .wrangler/state",
+    "predeploy": "node tools/fetch-web-vault.mjs",
     "deploy": "wrangler deploy",
+    "build:wasm": "asc wasm/pbkdf2.ts -o wasm/pbkdf2.wasm --optimizeLevel 3 --shrinkLevel 0 --initialMemory 2",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",

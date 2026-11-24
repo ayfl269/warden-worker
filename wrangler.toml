@@ -38,27 +38,37 @@ simple = { limit = 15, period = 60 }
 
 [[d1_databases]]
 binding = "vault1"
-database_name = "vault1-ts"
-# Local dev ignores this value. Replace with the real id before deploying.
+database_name = "vault1"
+# Local dev ignores this value. Replace it with the id `wrangler d1 create` prints.
 database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 migrations_dir = "migrations"
 
+# Attachments (optional). Add the id from `wrangler kv namespace create ATTACHMENTS_KV`;
+# without it wrangler skips the binding and attachment endpoints stay disabled.
 [[kv_namespaces]]
 binding = "ATTACHMENTS_KV"
+# id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
 
 # R2 takes priority over KV when bound.
 # [[r2_buckets]]
 # binding = "ATTACHMENTS_BUCKET"
-# bucket_name = "warden-attachments-ts"
+# bucket_name = "warden-attachments"
 
 [triggers]
 crons = ["0 3 * * *"]
 
-[vars]
+# Static assets: the Bitwarden Web Vault frontend.
+#
+# `public/web-vault` is not committed; `npm run frontend` (also wired as the
+# `predev`/`predeploy` hook) downloads a pinned bw_web_builds release into it.
+# Requests outside `run_worker_first` are answered by the assets layer and never
+# reach the Worker, which is what keeps static traffic off the CPU budget.
+[assets]
+directory = "./public/web-vault"
+not_found_handling = "404-page"
+html_handling = "auto-trailing-slash"
+# Only invoke the Worker for API, Identity and notification routes; everything
+# else is served straight from the asset store.
+run_worker_first = ["/api/*", "/identity/*", "/notifications/*"]
 
-# `[assets]` is enabled at P6 cutover, once public/web-vault has been downloaded:
-# [assets]
-# directory = "./public/web-vault"
-# not_found_handling = "404-page"
-# html_handling = "auto-trailing-slash"
-# run_worker_first = ["/api/*", "/identity/*", "/notifications/*"]
+[vars]

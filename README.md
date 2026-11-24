@@ -8,10 +8,9 @@ A self-hosted, Bitwarden-compatible server that runs on Cloudflare Workers: D1 f
 KV or R2 for attachments, Durable Objects for CPU-heavy work and live sync. Designed to be
 deployed once and forgotten.
 
-> **Migration notice:** the backend is being rewritten from Rust/WASM to TypeScript.
-> The TypeScript implementation lives in `worker/` and is configured by
-> `wrangler.toml`; the Rust reference implementation is still present and is what
-> `wrangler.toml` currently deploys. See [Migration status](#migration-status).
+The backend is written in TypeScript (Hono + D1 + Durable Objects). It was ported 1:1 from
+the original Rust/WASM worker; the wire format is locked by golden fixtures captured from
+that implementation — see [docs/verification.md](docs/verification.md).
 
 ## Features
 
@@ -85,14 +84,26 @@ makes registration fail with `500`.
 
 ### Database
 
-Set `D1_DATABASE_ID` in `wrangler.toml` (or via the deploy pipeline), then apply migrations:
+Replace `REPLACE_WITH_YOUR_D1_DATABASE_ID` in `wrangler.toml` with the id from
+`npx wrangler d1 create vault1`, then create the schema:
 
 ```bash
-npx wrangler d1 migrations apply vault1 --remote
+npx wrangler d1 execute vault1 --remote --file sql/schema.sql   # fresh database
+npx wrangler d1 migrations apply vault1 --remote                # existing database
 ```
 
-On a brand-new database, `sql/schema.sql` can be applied first (it contains the full
-schema); the deploy workflow does this automatically when the database has no tables.
+### Frontend
+
+The Bitwarden Web Vault is served as static assets from `public/web-vault`, which is not
+committed. Populate it with:
+
+```bash
+npm run frontend          # pinned bw_web_builds release; BW_WEB_VERSION=latest to track upstream
+```
+
+`npm run dev` and `npm run deploy` run this automatically, so the directory is only fetched
+once. See [docs/deployment.md](docs/deployment.md#frontend) for version pinning and how the
+asset routing works.
 
 ## Configuration
 
@@ -151,11 +162,11 @@ Sensitive endpoints use Cloudflare's Rate Limiting binding. Missing bindings fai
 
 ```bash
 npm install
-npm run dev          # wrangler dev -c wrangler.toml --local --persist-to .wrangler/state
+npm run dev          # fetches the frontend if needed, then wrangler dev --local
 ```
 
-The API is served at `http://localhost:8787`. Secrets can be provided via `.dev.vars`
-(`JWT_SECRET`, `JWT_REFRESH_SECRET`, `ALLOWED_EMAILS`).
+The site is served at `http://localhost:8787` — the API *and* the Web Vault. Secrets can be
+provided via `.dev.vars` (`JWT_SECRET`, `JWT_REFRESH_SECRET`, `ALLOWED_EMAILS`).
 
 ### Tests
 
@@ -170,51 +181,57 @@ SQL, crypto and response shapes are exercised without a Workers runtime. A separ
 `@cloudflare/vitest-plugin` project (`vitest.integration.config.ts`) is provided for
 workerd-specific behaviour (Durable Objects, WebSockets).
 
-### Frontend
+### PBKDF2 WebAssembly module
 
-The web vault is served as static assets from `public/web-vault` (not committed). Download
-a pinned `bw_web_builds` release and extract it there before deploying.
+`wasm/pbkdf2.ts` is hand-written AssemblyScript, compiled to `wasm/pbkdf2.wasm` (committed):
+
+```bash
+npm run build:wasm
+```
+
+It is the production PBKDF2 backend: 600k iterations exceed both the WebCrypto and the
+`node:crypto` caps on the edge, and a pure-JS implementation blows the per-request CPU
+budget. The module reuses the HMAC key schedule (2 SHA-256 compressions per iteration
+instead of 4).
 
 ## Deployment
 
 ```bash
-npx wrangler deploy
+npm run deploy
 ```
 
-CI (`.github/workflows/push-cloudflare.yaml`) downloads the pinned web vault, applies D1
-migrations, optionally seeds global equivalent domains, and deploys.
+This fetches the frontend if needed and runs `wrangler deploy`, which uploads the Worker and
+the static assets. See [docs/deployment.md](docs/deployment.md) for the full guide, including
+the Cloudflare Workers Builds pipeline (`scripts/cf-build.sh` + `scripts/cf-deploy.sh`) and
+the D1/KV/R2 setup.
 
-## Migration status
+CI (`.github/workflows/ci.yml`) typechecks, lints, runs the test suite, rebuilds the WASM
+module, downloads the frontend and verifies the bundle with `wrangler deploy --dry-run`. It
+does **not** deploy; `backup-d1.yaml` handles scheduled D1 exports.
 
-| Area | Status |
-|---|---|
-| TypeScript worker (`worker/`) | Implemented: identity, accounts, 2FA, devices, auth requests, ciphers, folders, sync, import, domains, attachments, Sends, notifications, push |
-| Rust worker (`src/`) | Reference implementation; still deployed by `wrangler.toml` |
-| Golden fixtures | Not yet captured (requires the Rust toolchain) |
-| Cutover | Pending; `wrangler.toml` currently points at the TypeScript worker |
-
-The Rust sources stay in the repository until contract fixtures are captured, because they
-are the only executable specification of the wire format.
-
-### Verification status
+## Verification status
 
 See [docs/verification.md](docs/verification.md) for the full matrix, reproduction commands
-and the remaining verification checklist.
+and the remaining checklist.
 
-Verified locally (289 tests, `npm test`):
+Verified (`npm test`, 285 tests):
 
 * HTTP handlers end to end against real SQLite (`node:sqlite` + `sql/schema.sql`).
 * PBKDF2/TOTP/JWT vectors, MessagePack framing, error mapping, routing.
+* **38/38 golden HTTP fixtures byte-identical** to the Rust worker they were captured from
+  (`tests/golden/http.json`, replayable with `tools/diff-golden.mjs`).
 
-* PBKDF2 with 600k iterations on a deployed worker: **measured**. `node:crypto` and WebCrypto
-  both reject >100k iterations on the edge, so `@noble/hashes` is the production path; it
-  produces identical bytes and costs ~1.4–1.5 s per hash inside a Durable Object. See
-  [tools/pbkdf2-probe/README.md](tools/pbkdf2-probe/README.md).
+Verified against a live deployment:
+
+* PBKDF2 with 600k iterations: the `wasm/pbkdf2.wasm` module produces the expected digest on
+  the edge in ~0.55 s per hash, inside a Durable Object. WebCrypto and `node:crypto` both
+  reject >100k iterations there, which is why the module exists.
 
 Not yet verified:
 
-* Golden HTTP/WebSocket diff against the Rust worker (requires the Rust toolchain).
-* Durable Objects end to end (`HeavyDo`, `NotifyDo`) — requires workerd.
+* Durable Objects end to end (`HeavyDo`, `NotifyDo`) — requires workerd, unavailable in the
+  development sandbox; covered indirectly by the handler tests.
+* WebSocket notification frames through a proxy-capable client.
 * Mobile push against the real Bitwarden relay.
 
 Known deviations from the Rust implementation:
@@ -222,7 +239,8 @@ Known deviations from the Rust implementation:
 * `reprompt` defaults to the float `0.0` in Rust; JSON serialization emits `0`.
 * Malformed request bodies return plain-text rejections with matching status codes but not
   byte-identical messages.
-* Response header ordering may differ.
+* Response header ordering and JSON field order may differ (the Rust worker itself emits two
+  different field orders depending on the code path).
 
 ## License
 

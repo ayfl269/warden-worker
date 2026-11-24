@@ -1,61 +1,290 @@
 # Deployment
 
-This page covers the available deployment paths. Pick the one that fits your workflow and infrastructure.
+Warden is a single Cloudflare Worker (Hono + TypeScript) backed by:
 
-## TypeScript worker (current development target)
+| Resource | Binding | Required | Purpose |
+|---|---|---|---|
+| D1 database | `vault1` | yes | users, ciphers, folders, sends, devices |
+| KV namespace | `ATTACHMENTS_KV` | no | attachment blobs (or use R2 instead) |
+| R2 bucket | `ATTACHMENTS_BUCKET` | no | attachment blobs, preferred when bound |
+| Durable Object `HeavyDo` | `HEAVY_DO` | yes | PBKDF2-heavy endpoints (login, register, password verify) |
+| Durable Object `NotifyDo` | `NOTIFY_DO` | yes | WebSocket notification hub |
+| Static assets | — | no | the Web Vault frontend in `public/web-vault` |
 
-The backend is being rewritten in TypeScript. It lives in `worker/` and is configured by
-`wrangler.toml`; `wrangler.toml` still deploys the Rust reference implementation until
-the golden-fixture comparison is complete.
+Prerequisites: Node.js 20+, npm, and an authenticated wrangler
+(`npx wrangler login`, or `CLOUDFLARE_API_TOKEN` in the environment).
 
-Prerequisites: Node.js 20+, npm, and an authenticated `wrangler`.
+## CLI deployment
 
-1. **Install dependencies**
+### 1. Install dependencies
 
-   ```bash
-   npm ci
-   ```
+```bash
+npm ci
+```
 
-2. **Create the D1 database and wire the id**
+### 2. Create the D1 database
 
-   ```bash
-   npx wrangler d1 create vault1-ts
-   # copy the returned database_id into wrangler.toml
-   ```
+```bash
+npx wrangler d1 create vault1
+```
 
-3. **Create the schema** (fresh database only)
+Copy the returned `database_id` into `wrangler.toml`, replacing
+`REPLACE_WITH_YOUR_D1_DATABASE_ID`:
 
-   ```bash
-   npx wrangler d1 execute vault1-ts --remote --file sql/schema.sql
-   ```
+```toml
+[[d1_databases]]
+binding = "vault1"
+database_name = "vault1"
+database_id = "<the uuid wrangler printed>"
+```
 
-   For an existing database use `npx wrangler d1 migrations apply vault1-ts --remote -c wrangler.toml`.
+The committed value is a placeholder, so `wrangler.toml` is safe to keep in git. If you
+prefer not to edit the file, the same edit is what `scripts/cf-build.sh` performs from the
+`D1_DATABASE_ID` build variable.
 
-4. **Set the required secrets**
+### 3. Create the attachments namespace (optional)
 
-   ```bash
-   npx wrangler secret put JWT_SECRET -c wrangler.toml
-   npx wrangler secret put JWT_REFRESH_SECRET -c wrangler.toml
-   npx wrangler secret put ALLOWED_EMAILS -c wrangler.toml   # e.g. "*@example.com"
-   ```
+Attachments are optional. With neither KV nor R2 bound, every attachment endpoint returns
+`501` and the rest of the server works normally.
 
-   `ALLOWED_EMAILS` is mandatory: registration returns `401 Not allowed to signup` unless
-   the raw email matches one of the comma-separated globs, and a missing secret yields 500.
+```bash
+npx wrangler kv namespace create ATTACHMENTS_KV
+```
 
-5. **Deploy**
+Add the returned id to the existing block:
 
-   ```bash
-   npx wrangler deploy -c wrangler.toml
-   ```
+```toml
+[[kv_namespaces]]
+binding = "ATTACHMENTS_KV"
+id = "<the id wrangler printed>"
+```
 
-6. **Verify**
+To use R2 instead (larger files, streaming), create a bucket and uncomment the
+`[[r2_buckets]]` block — R2 wins over KV whenever both are bound:
 
-   ```bash
-   curl -s https://<worker-url>/api/config | jq .version   # "2026.6.0"
-   curl -s https://<worker-url>/api/alive                  # timestamp; proves D1 works
-   ```
+```bash
+npx wrangler r2 bucket create warden-attachments
+```
 
-7. **Verify PBKDF2 on the edge** (required before cutover)
+### 4. Download the Web Vault frontend
+
+```bash
+npm run frontend
+```
+
+This downloads a pinned `bw_web_builds` release, extracts it into `public/web-vault`
+(git-ignored), deletes the `*.map` files, and copies the UI override
+`public/css/vaultwarden.css` into place. See [Frontend](#frontend) for version pinning.
+
+The step is also wired as the `predev`/`predeploy` hook, so `npm run dev` and
+`npm run deploy` populate the directory on demand. Run it explicitly only to pre-populate
+the tree or to switch versions.
+
+### 5. Create the schema
+
+Fresh database:
+
+```bash
+npx wrangler d1 execute vault1 --remote --file sql/schema.sql
+```
+
+Existing database (incremental changes only):
+
+```bash
+npx wrangler d1 migrations apply vault1 --remote
+```
+
+`sql/schema.sql` already contains every bundled migration, so a fresh database must use
+`--file sql/schema.sql`; running `migrations apply` on an empty database replays them all
+one by one instead.
+
+Optional: seed the global equivalent domains table (`/api/settings/domains` and
+`/api/sync` return `globalEquivalentDomains: []` without it):
+
+```bash
+bash scripts/seed-global-domains.sh --db vault1 --remote
+```
+
+### 6. Set the runtime secrets
+
+```bash
+npx wrangler secret put JWT_SECRET
+npx wrangler secret put JWT_REFRESH_SECRET
+npx wrangler secret put ALLOWED_EMAILS          # e.g. "*@example.com", comma separated
+```
+
+`ALLOWED_EMAILS` is mandatory: registration returns `401 Not allowed to signup` unless the
+raw email matches one of the globs, and a missing secret yields `500`.
+
+Optional mobile push relay settings: `PUSH_ENABLED`, `PUSH_RELAY_URI`,
+`PUSH_IDENTITY_URI` as plain vars, and `PUSH_INSTALLATION_ID`,
+`PUSH_INSTALLATION_KEY` as secrets. See
+[Mobile Push Notifications](../README.md#mobile-push-notifications-optional).
+
+### 7. Deploy
+
+```bash
+npm run deploy
+```
+
+This bundles `src/index.ts` and the PBKDF2 WebAssembly module, uploads the Worker, and
+uploads `public/web-vault` as static assets.
+
+### 8. Verify
+
+```bash
+curl -s https://<worker-url>/api/config | jq .version   # "2026.6.0"
+curl -s https://<worker-url>/api/alive                  # timestamp; proves D1 works
+curl -sI https://<worker-url>/ | head -n 1              # 200 from the asset layer
+```
+
+By default the `*.workers.dev` hostname is enabled (`workers_dev = true`) but can throw
+`1101` errors; a custom domain is recommended — see
+[Configure Custom Domain](../README.md#configure-custom-domain-optional).
+
+## Frontend
+
+The Web Vault is a prebuilt Angular bundle published by the Vaultwarden project as
+`bw_web_builds` releases. It is not committed: it is ~36 MB compressed / ~67 MB extracted,
+255 files of generated code that this repository never edits.
+
+### How it is served
+
+`wrangler.toml` declares it as static assets:
+
+```toml
+[assets]
+directory = "./public/web-vault"
+not_found_handling = "404-page"
+html_handling = "auto-trailing-slash"
+run_worker_first = ["/api/*", "/identity/*", "/notifications/*"]
+```
+
+`run_worker_first` is the important line: only API, Identity and notification paths reach
+the Worker. Every other request (`/`, `/css/*`, `/app/*`, …) is answered by the asset layer
+without spending Worker CPU, which is what keeps the frontend off the CPU budget.
+
+`/` serves `index.html`; the Web Vault then uses hash routing (`/#/login`, `/#/vault`), so
+no SPA fallback rewrite is needed and unknown paths correctly return `404.html`.
+
+### Version pinning
+
+```bash
+npm run frontend                                  # pinned default (v2026.6.4)
+BW_WEB_VERSION=v2026.10.1 npm run frontend        # specific tag
+BW_WEB_VERSION=latest npm run frontend            # newest release
+npm run frontend -- --force                       # re-download the current tag
+```
+
+The download is skipped once a complete tree has been extracted — tracked by
+`public/.web-vault-version`, not by `index.html`, so an interrupted extraction is retried
+instead of being mistaken for a good install. Always pass `--force` when changing
+`BW_WEB_VERSION`: a stale tree would keep hashed chunks that the new `index.html` no longer
+references.
+
+The downloader resumes across dropped connections and verifies the archive against the
+release's published `sha256sums.txt`, because GitHub release downloads are slow enough that
+a truncated transfer is a realistic failure mode — and a truncated `.tar.gz` still extracts
+partially, producing a site that is missing lazy-loaded chunks.
+
+### UI override
+
+`public/css/vaultwarden.css` hides features this backend does not implement (organisation
+billing, SSO, passkeys, Duo/YubiKey/WebAuthn 2FA, emergency access). `npm run frontend`
+copies it to `public/web-vault/css/vaultwarden.css`; the Web Vault loads it from there.
+
+### Local development
+
+`npm run dev` runs the frontend hook first, then `wrangler dev --local`, so the full site
+(assets + API) is available on the local port. Without `public/web-vault`, wrangler refuses
+to start because the `[assets]` directory is missing.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request and only *checks* the code —
+it does not deploy:
+
+1. `npm run typecheck`
+2. `npx biome check .`
+3. `npm test` (unit and handler tests against a real SQLite-backed D1 adapter)
+4. `npm run build:wasm` — rebuilds the PBKDF2 module
+5. `npm run frontend` — downloads the Web Vault
+6. `npx wrangler deploy --dry-run` — proves the Worker and assets bundle
+
+`.github/workflows/backup-d1.yaml` exports the D1 database on a schedule and uploads it to
+S3 or WebDAV. It needs these repository secrets:
+
+| Secret | Required | Description |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | yes | token with **D1: Read** (and **Workers Scripts: Read** for `d1 list`) |
+| `CLOUDFLARE_ACCOUNT_ID` | yes | account id |
+| `D1_DATABASE_ID` | yes | production D1 database id |
+| `S3_*` / `WEBDAV_*` / `BACKUP_ENCRYPTION_KEY` | no | backup destination and encryption |
+
+See [backup.md](./backup.md) for the full backup setup.
+
+## Cloudflare Workers Builds (dashboard)
+
+[Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) is Cloudflare's
+native Git integration: connect the repository once and every push builds and deploys on
+Cloudflare, with no GitHub Actions deploy job. The pipeline is encapsulated in two scripts:
+
+- [`scripts/cf-build.sh`](../scripts/cf-build.sh) (**Build** phase) — `npm ci`, rebuilds the
+  PBKDF2 WebAssembly module, downloads the Web Vault frontend, substitutes the D1 database
+  id, typechecks, and runs a bundle dry-run.
+- [`scripts/cf-deploy.sh`](../scripts/cf-deploy.sh) (**Deploy** phase) — bootstraps/migrates
+  D1, optionally seeds global domains, then runs `wrangler deploy`.
+
+**No separate `CLOUDFLARE_API_TOKEN` is needed for the deploy itself.** Workers Builds
+auto-generates a *build token* and uses it as the credential for the deploy phase, so the
+D1 migrations in `cf-deploy.sh` reuse that one token.
+
+### Setup
+
+1. **Workers & Pages → `warden-worker-ts` → Settings → Build → Connect** your repository
+   (production branch: `main`). This auto-generates the build token.
+
+2. **Grant the build token D1 access** (one-time). The auto-generated token covers Workers
+   Scripts / KV / R2 but **not** D1, so migrations would fail with an authorization error.
+   Go to [My Profile → API Tokens](https://dash.cloudflare.com/profile/api-tokens), edit the
+   token named **"Workers Builds"**, and add **Account → D1 → Edit**. (Or set `SKIP_D1=1`
+   and apply migrations yourself.)
+
+3. Set the build commands:
+
+   | Field | Value |
+   |---|---|
+   | **Build command** | `bash scripts/cf-build.sh` |
+   | **Deploy command** | `bash scripts/cf-deploy.sh` |
+
+4. Add **build variables** (Settings → Build → *Variables and Secrets*). None are secrets.
+
+   | Name | Required | Description |
+   |---|---|---|
+   | `D1_DATABASE_ID` | yes | production D1 database id (substituted into `wrangler.toml`) |
+   | `BW_WEB_VERSION` | no | `bw_web_builds` tag (default `v2026.6.4`); `latest` tracks upstream |
+   | `R2_NAME` | no | R2 bucket name; enables the `ATTACHMENTS_BUCKET` binding |
+   | `SEED_GLOBAL_DOMAINS` | no | `false` to skip seeding global equivalent domains |
+   | `GLOBAL_DOMAINS_URL` | no | pin a specific `global_domains.json` source |
+   | `SKIP_D1` | no | `1` to skip all D1 bootstrap/migrate/seed steps (deploy still runs) |
+   | `CLOUDFLARE_ACCOUNT_ID` | no | set only if wrangler cannot infer the account |
+
+5. Set the runtime **Worker** secrets under the Worker's **Settings → Variables and
+   Secrets** (not the build config): `ALLOWED_EMAILS`, `JWT_SECRET`, `JWT_REFRESH_SECRET`.
+
+6. **Push to `main`** and watch the Worker's **Builds** tab.
+
+> [!NOTE]
+> The KV namespace id is not a build variable: create the namespace once
+> (`npx wrangler kv namespace create ATTACHMENTS_KV`) and put its id in `wrangler.toml`
+> before connecting the repository.
+
+## Verification before cutover
+
+1. Golden fixtures captured from the Rust worker (`npm run capture:golden`) and diffed
+   against this implementation — see [verification.md](./verification.md).
+2. PBKDF2 works on the real edge (600k iterations exceed the WebCrypto and `node:crypto`
+   limits, which is why the Worker ships a hand-written WASM module):
 
    ```bash
    npx wrangler deploy -c tools/pbkdf2-probe/wrangler.toml
@@ -63,293 +292,18 @@ Prerequisites: Node.js 20+, npm, and an authenticated `wrangler`.
    npx wrangler delete -c tools/pbkdf2-probe/wrangler.toml
    ```
 
-   Expected: `native-pbkdf2-ok`. The local runtime does not enforce the WebCrypto
-   100k-iteration cap, so this must be run against a real deployment.
-
-### Cutover checklist
-
-1. Golden fixtures captured from the Rust worker (`npm run capture:golden`) and the
-   TypeScript worker diffed against them.
-2. PBKDF2 probe returns `native-pbkdf2-ok` on a deployed worker.
+   Expected `native-pbkdf2-ok`; the local runtime does not enforce the 100k-iteration cap,
+   so this must run against a real deployment.
 3. Real clients exercised: registration, login, 2FA, sync, attachment upload/download,
-   Send (text + file), logout-all.
-4. Point `wrangler.toml` at `worker/index.ts`, remove the `[build]` command, delete the
-   Rust sources, and deploy.
-
-## Other deployment paths
-
-The sections below describe the Rust-era deployment paths. They remain valid while
-`wrangler.toml` still points at the Rust worker.
-
-- **CLI** — build and `wrangler deploy` from your machine.
-- **GitHub Actions** — build and deploy from CI on every push; the same Cloudflare API token also drives the daily D1 backup workflow.
-- **Cloudflare Workers Builds** — connect the repo in the Cloudflare dashboard so `git push` builds and deploys on Cloudflare.
-
-## CLI Deployment
-
-1. **Clone the repository:**
-
-   ```bash
-   git clone https://github.com/your-username/warden-worker.git
-   cd warden-worker
-   ```
-
-2. **Create a D1 Database:**
-
-   ```bash
-   wrangler d1 create warden-db
-   ```
-
-3. **(Optional) Enable R2 Bucket for Attachments:**
-
-   Warden uses KV for attachments storage by default. If you want to use R2 as storage backend:
-
-   ```bash
-   # Create the production bucket
-   wrangler r2 bucket create warden-attachments
-   ```
-
-   Then enable the R2 binding in `wrangler.toml` by uncommenting the R2 bucket configuration sections.
-
-   **Note:** Attachments are optional. If you remove both KV and R2 bindings, attachment functionality will be disabled but all other features will work normally.
-
-4. **Configure your Database ID:**
-
-   When you create a D1 database, Wrangler will output the `database_id`. To avoid committing this secret to your repository, this project uses an environment variable to configure the database ID.
-
-   You have two options:
-
-   **Option 1: (Recommended) Use a `.env` file:**
-
-   Create a file named `.env` in the root of the project and add the following line, replacing the placeholder with your actual `database_id`:
-
-   ```
-   D1_DATABASE_ID="your-database-id-goes-here"
-   ```
-
-   Make sure to add the `.env` file to your `.gitignore` file to prevent it from being committed to git.
-
-   **Option 2: Set an environment variable in your shell:**
-
-   You can set the environment variable in your shell before deploying:
-
-   ```bash
-   export D1_DATABASE_ID="your-database-id-goes-here"
-   wrangler deploy
-   ```
-
-5. **Download the frontend (Web Vault):**
-
-   ```bash
-   # Default pinned version (override by exporting BW_WEB_VERSION)
-   BW_WEB_VERSION="${BW_WEB_VERSION:-v2026.6.4}"
-   if [ "${BW_WEB_VERSION}" = "latest" ]; then
-     BW_WEB_VERSION="$(curl -s https://api.github.com/repos/dani-garcia/bw_web_builds/releases/latest | jq -r .tag_name)"
-   fi
-
-   # Download and extract
-   wget "https://github.com/dani-garcia/bw_web_builds/releases/download/${BW_WEB_VERSION}/bw_web_${BW_WEB_VERSION}.tar.gz"
-   tar -xzf "bw_web_${BW_WEB_VERSION}.tar.gz" -C public/
-   rm "bw_web_${BW_WEB_VERSION}.tar.gz"
-
-   # Remove large source maps to satisfy Cloudflare static asset per-file limits
-   find public/web-vault -type f -name '*.map' -delete
-   ```
-
-   **Optional:** Apply lightweight UI overrides to generate `public/web-vault/css/vaultwarden.css`:
-
-   ```bash
-   mkdir -p public/web-vault/css/ && cp public/css/vaultwarden.css public/web-vault/css/
-   ```
-
-6. **Set up database and deploy the worker:**
-
-   ```bash
-   # Only run once before first deployment
-   wrangler d1 execute vault1 --file sql/schema.sql --remote
-   # For migrations
-   wrangler d1 migrations apply vault1 --remote
-
-   # (Optional) Seed global equivalent domains into D1
-   # This downloads Vaultwarden's global_domains.json by default.
-   bash scripts/seed-global-domains.sh --db vault1 --remote
-   
-   wrangler deploy
-   ```
-
-   This will deploy the worker and set up the necessary database tables.
-
-7. **Set environment variables** as `Secret`
-
-- `ALLOWED_EMAILS` your-email@example.com (supports glob patterns like `*@example.com`)
-- `JWT_SECRET` a long random string
-- `JWT_REFRESH_SECRET` a long random string
-
-   **Optional mobile push relay settings:**  
-     `PUSH_ENABLED=true`, `PUSH_RELAY_URI`, `PUSH_IDENTITY_URI` as text variables;  
-     `PUSH_INSTALLATION_ID`, `PUSH_INSTALLATION_KEY` as secret variables.  
-     See [Mobile Push Notifications](../README.md#mobile-push-notifications-optional) for more details.
-
-8. **Configure your Bitwarden client:**
-
-   In your Bitwarden client, go to the self-hosted login screen and enter the URL of your deployed worker.
-
-   By default, the `*.workers.dev` domain is disabled, since it may throw 1101 error. It's highly recommended to use a custom domain instead; see [Configure Custom Domain](../README.md#configure-custom-domain-optional) for more details.
-
-## CI/CD Deployment with GitHub Actions
-
-This project includes GitHub Actions workflows for automated deployment. **This is the recommended default approach** for production: every push to `main` builds and deploys, and the same `CLOUDFLARE_API_TOKEN` secret also drives the daily [`Backup D1 Database`](/.github/workflows/backup-d1.yaml) workflow  — so a single token covers both deploy and backups.
-
-### Required Secrets
-
-Add the following secrets to your GitHub repository (`Settings > Secrets and variables > Actions`):
-
-| Secret | Required | Description |
-|--------|----------|-------------|
-| `CLOUDFLARE_API_TOKEN` | yes | Your Cloudflare API token |
-| `CLOUDFLARE_ACCOUNT_ID` | yes | Your Cloudflare account ID |
-| `D1_DATABASE_ID` | yes | Your production D1 database ID |
-| `D1_DATABASE_ID_DEV` | no | Dev D1 database ID (required only if you use the `Deploy Dev` workflow on the `dev` branch) |
-
-#### How to Get Your Cloudflare Account ID
-
-1. Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com/)
-2. Select your account
-3. Your Account ID is displayed in the right sidebar of the Overview page, or in the URL: `https://dash.cloudflare.com/<account-id>`
-
-#### How to Get Your Cloudflare API Token
-
-The `CLOUDFLARE_API_TOKEN` requires the following permissions:
-- **Edit Cloudflare Workers**: Required for deploying the Worker
-- **Edit D1**: Required for database migrations and backups
-- **Edit KV**: Required for attachments storage (if using KV)
-
-1. Visit [https://dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)
-2. Click **Create Token**
-3. Use the **Edit Cloudflare Workers** template
-4. Add **Account** → **D1** → **Edit** under `Permissions`
-5. Select `Account Resources` and `Zone Resources`
-6. Click **Continue to Summary** and then **Create Token**
-
-### Optional Variables
-
-#### Web Vault frontend version
-
-You can pin/override the bundled Web Vault (bw_web_builds) version via GitHub Actions Variables:
-
-| Variable | Applies to | Default | Example | Notes |
-|----------|------------|---------|---------|-------|
-| `BW_WEB_VERSION` | prod (`main/uat/release*`) | `v2026.6.4` | `v2026.6.4` | Set to `latest` to follow upstream latest release |
-| `BW_WEB_VERSION_DEV` | dev (`dev`) | `v2026.6.4` | `v2026.6.4` | Set to `latest` to follow upstream latest release |
-
-#### Global Equivalent Domains
-
-Bitwarden clients use `globalEquivalentDomains` for URI matching across well-known domain groups.
-
-To avoid bundling a large JSON file into the Worker, the dataset can be stored in D1 and seeded during deploy.
-
-| Variable | Applies to | Default | Example | Notes |
-|----------|------------|---------|---------|-------|
-| `SEED_GLOBAL_DOMAINS` | prod + dev | `true` | `false` | Set to `false` to skip seeding (API returns empty list) |
-| `GLOBAL_DOMAINS_URL` | prod | (empty) | raw GitHub URL | Optional: pin a specific Vaultwarden tag/commit for reproducible deploys |
-| `GLOBAL_DOMAINS_URL_DEV` | dev | (empty) | raw GitHub URL | Same as prod, but for dev workflow |
-
-If you skip seeding, `/api/settings/domains` and `/api/sync` will return `globalEquivalentDomains: []`.
-
-### Usage
-
-1. **Fork or clone the repository** to your GitHub account
-
-2. **Configure the required secrets** in your repository settings
-
-3. **(Optional) Enable R2 bucket for attachments:**
-
-   Warden uses KV for attachments storage by default. If you want to use R2 as storage backend:
-
-   1. **Create R2 buckets in Cloudflare Dashboard before running the action:**
-      - Go to **Storage & databases** → **R2** → **Create bucket**
-      - Create a production bucket (e.g., `warden-attachments`)
-
-   2. **Add the bucket names as GitHub Action secrets:**
-      - `R2_NAME` → production bucket name
-
-   The workflows will auto-append the `ATTACHMENTS_BUCKET` binding into `wrangler.toml` when these secrets are present - no manual binding in the Cloudflare console is required.
-
-4. **Manually trigger the `Build` Action** from the GitHub Actions tab in your repository
-
-5. **Monitor the deployment** in the Actions tab of your repository
-
-6. **Set environment variables** as `secret` in the Cloudflare dashboard (following the command line deployment steps):
-   - `ALLOWED_EMAILS` your-email@example.com (supports glob patterns like `*@example.com`, comma separated)
-   - `JWT_SECRET` a long random string
-   - `JWT_REFRESH_SECRET` a long random string
-   - Optional mobile push settings:
-     `PUSH_ENABLED=true`, `PUSH_RELAY_URI`, `PUSH_IDENTITY_URI`, `PUSH_INSTALLATION_ID`, `PUSH_INSTALLATION_KEY`.  
-     See [Mobile Push Notifications](../README.md#mobile-push-notifications-optional) for more details.
-
-
-> [!IMPORTANT]
-> The server can't work without these three environment variables. If you forget to set them, the server will crash.
-
-If you want to show a 'Create account' button in frontend, you can add `DISABLE_USER_REGISTRATION` as `text` and set it to `false`. Check [Environment Variables](../README.md#environment-variables) for more details.
-
-By default, the `*.workers.dev` domain is disabled, since it may throw 1101 error. It's highly recommended to use a custom domain instead; see [Configure Custom Domain](../README.md#configure-custom-domain-optional) for more details.
-
-## Cloudflare Workers Builds (Dashboard) — Optional Alternative
-
-[Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) is Cloudflare's native Git integration: connect the repository once in the dashboard and every push builds and deploys the Worker on Cloudflare, without a GitHub Actions deploy run.
-
-> [!NOTE]
-> This is an **optional alternative** to the default [GitHub Actions](#cicd-deployment-with-github-actions) flow, not a replacement. Two things to weigh before adopting it:
-> - **Backups still need a GitHub token.** The daily `Backup D1 Database` workflow (`.github/workflows/backup-d1.yaml`) authenticates with the `CLOUDFLARE_API_TOKEN` GitHub secret, independent of how you deploy. Adopting Workers Builds does **not** remove that secret — you'd maintain *two* credentials: the Cloudflare build token (deploy) and the GitHub token (backups).
-> - **Avoid double-deploys.** If you connect Workers Builds, disable the GitHub Actions `Build` workflow (Actions tab → **Build** → **Disable workflow**, or remove its `push:` trigger) so `main` is not deployed twice.
-> - **Slow deployment speed.** The Cloudflare build environment has low RAM, CPU, and the deployment will cost you 7 minutes or so, using up your Worker build time.
-
-Because this is a Rust→WASM Worker (the Workers Builds image does not ship Rust) and the frontend, database id, and migrations are all resolved at build time, the pipeline is encapsulated in two scripts:
-
-- [`scripts/cf-build.sh`](../scripts/cf-build.sh) (**Build** phase) — installs the Rust toolchain, downloads the Web Vault frontend, substitutes the D1 database id, and compiles the Worker.
-- [`scripts/cf-deploy.sh`](../scripts/cf-deploy.sh) (**Deploy** phase) — bootstraps/migrates D1, optionally seeds global domains, then runs `wrangler deploy`.
-
-**No separate `CLOUDFLARE_API_TOKEN` is needed for the deploy itself.** Workers Builds auto-generates a *build token* and uses it as the credential for the deploy phase. Because the D1 migrations run in that same deploy phase (`cf-deploy.sh`), they reuse that one token — you just grant it D1 access once (step 2 below). (The separate daily backup workflow still relies on the `CLOUDFLARE_API_TOKEN` GitHub secret — see the note above.)
-
-### Setup
-
-1. In the Cloudflare dashboard, go to **Workers & Pages → `warden-worker` → Settings → Build**, then **Connect** your GitHub/GitLab repository (production branch: `main`). This auto-generates the build token.
-
-2. **Grant the build token D1 access** (one-time). The auto-generated token includes Workers Scripts / KV / R2 edit, but **not D1**, so migrations would fail with an authorization error. Go to [My Profile → API Tokens](https://dash.cloudflare.com/profile/api-tokens), edit the token named **"Workers Builds"**, and add a permission row: **Account → D1 → Edit**. (If you'd rather not run migrations in CI, skip this and set `SKIP_D1=1` in step 4 — see the note below.)
-
-3. Set the build commands:
-
-   | Field | Value |
-   |-------|-------|
-   | **Build command** | `bash scripts/cf-build.sh` |
-   | **Deploy command** | `bash scripts/cf-deploy.sh` |
-
-   > `cf-deploy.sh` prepends `$HOME/.cargo/bin` to `PATH` so that `wrangler deploy` can find `cargo`/`worker-build` (installed during the build phase) when it re-runs `wrangler.toml`'s `[build]` step.
-
-4. Add **Build variables** (Settings → Build → *Variables and Secrets*). None are secrets — the deploy credential is the build token from step 2.
-
-   | Name | Required | Description |
-   |------|----------|-------------|
-   | `D1_DATABASE_ID` | yes | Production D1 database id (substituted into `wrangler.toml`) |
-   | `BW_WEB_VERSION` | no | `bw_web_builds` tag (default `v2026.6.4`); set `latest` to track upstream |
-   | `WRANGLER_VERSION` | no | Pinned wrangler (default `4.82.1`) |
-   | `WORKER_BUILD_VERSION` | no | Pinned worker-build (default `0.8.5`; match the `worker` dep in `Cargo.toml`) |
-   | `R2_NAME` | no | R2 bucket name; enables the `ATTACHMENTS_BUCKET` binding |
-   | `SEED_GLOBAL_DOMAINS` | no | `false` to skip seeding global equivalent domains |
-   | `GLOBAL_DOMAINS_URL` | no | Pin a specific `global_domains.json` source |
-   | `SKIP_D1` | no | `1` to skip all D1 bootstrap/migrate/seed steps (deploy still runs) |
-   | `CLOUDFLARE_ACCOUNT_ID` | no | Set only if wrangler cannot infer the account during migrations |
-
-5. Set the runtime **Worker** secrets (these are *not* build variables — set them under the Worker's **Settings → Variables and Secrets**, not the build config): `ALLOWED_EMAILS`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, plus any optional push settings. See step 7 of [CLI Deployment](#cli-deployment).
-
-6. **Push to `main`.** Cloudflare runs `scripts/cf-build.sh` then `scripts/cf-deploy.sh`. Watch progress under the Worker's **Builds** tab.
-
-> [!NOTE]
-> The first build is slow (it compiles the Rust toolchain dependencies and `worker-build` from scratch). Subsequent builds reuse the build cache and are faster.
-
-> [!NOTE]
-> If you set `SKIP_D1=1` (or skip step 2), the Worker still builds and deploys, but D1 migrations are **not** applied automatically — apply them yourself when the schema changes (`npx wrangler d1 migrations apply vault1 --remote`), or run the GitHub Actions `Build` workflow manually.
-
-> [!IMPORTANT]
-> The default `Build` workflow deploys on every push to `main`. If you adopt Workers Builds, **disable that workflow** (repository **Actions** tab → select **Build** → **Disable workflow**, or remove the `push:` trigger in `.github/workflows/push-cloudflare.yaml`) so `main` is not deployed twice. Leave the `Backup D1 Database` workflow enabled — it still runs on its own schedule.
+   Send (text + file), logout-all, WebSocket notifications.
+
+## Troubleshooting
+
+| Symptom | Cause |
+|---|---|
+| `The directory specified in your Wrangler configuration file does not exist` | `public/web-vault` is missing — run `npm run frontend` |
+| `GET /` returns 404 while the API works | assets were not uploaded; check that `[assets]` is present and the directory was populated before deploy |
+| login returns `error code: 1102` (CPU limit) | the `HEAVY_DO` binding is missing, so PBKDF2 runs on the main Worker |
+| attachment endpoints return `501` | neither `ATTACHMENTS_KV` nor `ATTACHMENTS_BUCKET` is bound |
+| `NotSupportedError: iteration counts above 100000 are not supported` | `compatibility_flags = ["nodejs_compat"]` was removed, or the WASM module failed to load and the `node:crypto` fallback was used |
+| WebSocket notifications do not arrive | the `NOTIFY_DO` binding or its `do_v2` migration is missing |

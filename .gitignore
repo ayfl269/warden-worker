@@ -1,9 +1,11 @@
-target
 node_modules
 .wrangler
 .env
-# Frontend files (downloaded during deployment/development)
+# Frontend files (downloaded by `npm run frontend`, see tools/fetch-web-vault.mjs)
 public/web-vault/
+public/.web-vault-version
+# Tarball left behind if a frontend download is interrupted
+public/bw_web_*.tar.gz
 
 # reference repos
 vaultwarden/
